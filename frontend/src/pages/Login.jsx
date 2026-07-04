@@ -17,9 +17,9 @@ const Login = () => {
 
   useEffect(() => {
     if (user) {
-      if (user.role === 'admin') navigate('/admin/dashboard');
-      else if (user.role === 'clinical') navigate('/clinical/dashboard');
-      else if (user.role === 'inventory') navigate('/inventory/dashboard');
+      if (user.role.toLowerCase() === 'admin') navigate('/admin/dashboard');
+      else if (user.role.toLowerCase() === 'inventory') navigate('/inventory/dashboard');
+      else navigate('/clinic/dashboard');
     }
   }, [user, navigate]);
 
@@ -29,9 +29,9 @@ const Login = () => {
     setIsLoading(true);
     try {
       const userData = await login(email, password);
-      if (userData.role === 'admin') navigate('/admin/dashboard');
-      else if (userData.role === 'clinical') navigate('/clinical/dashboard');
-      else if (userData.role === 'inventory') navigate('/inventory/dashboard');
+      if (userData.role.toLowerCase() === 'admin') navigate('/admin/dashboard');
+      else if (userData.role.toLowerCase() === 'inventory') navigate('/inventory/dashboard');
+      else navigate('/clinic/dashboard');
     } catch (err) {
       setError(err);
     } finally {

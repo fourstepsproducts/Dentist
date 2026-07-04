@@ -27,6 +27,7 @@ const loginUser = async (req, res) => {
         name: user.name,
         email: user.email,
         role: user.role,
+        mustChangePassword: false,
         token: generateToken(user._id, user.role),
       });
     }
@@ -43,6 +44,7 @@ const loginUser = async (req, res) => {
         name: user.name,
         email: user.email,
         role: user.role,
+        mustChangePassword: user.mustChangePassword,
         token: generateToken(user._id, user.role),
       });
     }

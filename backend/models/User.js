@@ -52,6 +52,42 @@ const userSchema = new mongoose.Schema(
     consultationFee: {
       type: Number,
     },
+    
+    // Additional Personal Info
+    gender: { type: String },
+    dateOfBirth: { type: Date },
+    bloodGroup: { type: String },
+    alternateMobile: { type: String },
+    address: { type: String },
+    city: { type: String },
+    state: { type: String },
+    country: { type: String },
+    pincode: { type: String },
+
+    // Additional Professional Info
+    licenseNumber: { type: String },
+    shiftTiming: { type: String },
+    reportingManager: { type: String },
+    employmentType: { type: String },
+
+    // Security Info
+    mustChangePassword: {
+      type: Boolean,
+      default: true,
+    },
+    passwordChangedAt: {
+      type: Date,
+    },
+    lastLogin: {
+      type: Date,
+    },
+
+    // Emergency Contact
+    emergencyContact: {
+      contactPerson: { type: String },
+      relationship: { type: String },
+      phoneNumber: { type: String }
+    }
   },
   {
     timestamps: true,

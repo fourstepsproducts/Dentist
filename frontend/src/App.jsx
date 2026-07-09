@@ -1,7 +1,6 @@
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import Login from './pages/Login';
 import AdminDashboard from './pages/AdminDashboard';
-import InventoryDashboard from './pages/InventoryDashboard';
 import Unauthorized from './pages/Unauthorized';
 import ProtectedRoute from './components/ProtectedRoute';
 import DashboardLayout from './components/layout/DashboardLayout';
@@ -15,7 +14,6 @@ import LabManagement from './pages/admin/LabManagement';
 import FinancialReports from './pages/admin/FinancialReports';
 
 // Clinic Portal Pages
-
 import DynamicDashboard from './pages/clinic/pages/DynamicDashboard';
 import PatientRecords from './pages/clinic/pages/PatientRecords';
 import ChiefComplaint from './pages/clinic/pages/ChiefComplaint';
@@ -25,6 +23,26 @@ import Appointments from './pages/clinic/pages/Appointments';
 import Documents from './pages/clinic/pages/Documents';
 import Profile from './pages/clinic/pages/Profile';
 import Settings from './pages/clinic/pages/Settings';
+
+// Inventory Panel Pages & Context
+import { InventoryProvider } from './context/InventoryContext';
+import InventoryDashboard from './pages/inventory/pages/Dashboard';
+import ItemManagement from './pages/inventory/pages/ItemManagement';
+import MaterialSupply from './pages/inventory/pages/MaterialSupply';
+import StockManagement from './pages/inventory/pages/StockManagement';
+import StockInHand from './pages/inventory/pages/StockInHand';
+import MaterialRequirements from './pages/inventory/pages/MaterialRequirements';
+import InventoryLabManagement from './pages/inventory/pages/LabManagement';
+import MaterialInventory from './pages/inventory/pages/MaterialInventory';
+import Suppliers from './pages/inventory/pages/Suppliers';
+import PurchaseOrders from './pages/inventory/pages/PurchaseOrders';
+import GoodsReceived from './pages/inventory/pages/GoodsReceived';
+import Reports from './pages/inventory/pages/Reports';
+import SummaryDashboard from './pages/inventory/pages/SummaryDashboard';
+import SupplierPayments from './pages/inventory/pages/SupplierPayments';
+import DuePayments from './pages/inventory/pages/DuePayments';
+import Notifications from './pages/inventory/pages/Notifications';
+import InventorySettings from './pages/inventory/pages/Settings';
 
 function App() {
   return (
@@ -62,8 +80,30 @@ function App() {
           </Route>
 
           {/* Inventory Routes */}
-          <Route element={<ProtectedRoute allowedRoles={['inventory']} />}>
-            <Route path="/inventory/dashboard" element={<InventoryDashboard />} />
+          <Route element={<ProtectedRoute allowedRoles={['inventory', 'admin']} />}>
+            <Route element={
+              <InventoryProvider>
+                <Outlet />
+              </InventoryProvider>
+            }>
+              <Route path="/inventory/dashboard" element={<InventoryDashboard />} />
+              <Route path="/inventory/items" element={<ItemManagement />} />
+              <Route path="/inventory/material-supply" element={<MaterialSupply />} />
+              <Route path="/inventory/stock" element={<StockManagement />} />
+              <Route path="/inventory/stock-in-hand" element={<StockInHand />} />
+              <Route path="/inventory/requirements" element={<MaterialRequirements />} />
+              <Route path="/inventory/labs" element={<InventoryLabManagement />} />
+              <Route path="/inventory/material-inventory" element={<MaterialInventory />} />
+              <Route path="/inventory/suppliers" element={<Suppliers />} />
+              <Route path="/inventory/purchase-orders" element={<PurchaseOrders />} />
+              <Route path="/inventory/goods-received" element={<GoodsReceived />} />
+              <Route path="/inventory/reports" element={<Reports />} />
+              <Route path="/inventory/summary" element={<SummaryDashboard />} />
+              <Route path="/inventory/payments" element={<SupplierPayments />} />
+              <Route path="/inventory/due-payments" element={<DuePayments />} />
+              <Route path="/inventory/notifications" element={<Notifications />} />
+              <Route path="/inventory/settings" element={<InventorySettings />} />
+            </Route>
           </Route>
 
         </Route>

@@ -4,7 +4,7 @@ import { LayoutDashboard, Users, FileText, ClipboardList, Activity, Calendar, Up
 import { cn } from '../../../lib/utils';
 import { Stethoscope } from 'lucide-react';
 
-const ClinicSidebar = () => {
+const ClinicSidebar = ({ closeSidebar }) => {
   const links = [
     { name: 'Dashboard', path: '/clinic/dashboard', icon: LayoutDashboard },
     { name: 'Patient Records', path: '/clinic/patient-records', icon: Users },
@@ -18,6 +18,7 @@ const ClinicSidebar = () => {
   ];
 
   const handleLogout = () => {
+    if (closeSidebar) closeSidebar();
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     window.location.href = '/login';
@@ -35,6 +36,7 @@ const ClinicSidebar = () => {
           <NavLink
             key={link.name}
             to={link.path}
+            onClick={closeSidebar}
             className={({ isActive }) =>
               cn(
                 'flex items-center px-3 py-2.5 text-sm font-medium rounded-md transition-colors',

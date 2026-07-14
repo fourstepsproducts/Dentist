@@ -156,28 +156,29 @@ const StaffManagement = () => {
           <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Staff Management</h1>
           <p className="text-slate-500 text-sm mt-1">Manage all clinic employees, roles, and access.</p>
         </div>
-        <Button onClick={() => setIsModalOpen(true)} className="shrink-0">
+        <Button onClick={() => setIsModalOpen(true)} className="w-full sm:w-auto shrink-0 justify-center">
           <Plus size={18} className="mr-2" />
           Add New Staff
         </Button>
       </div>
 
       <Card>
-        <div className="p-4 border-b border-slate-100 flex flex-col sm:flex-row gap-4 items-center justify-between bg-slate-50/50 rounded-t-xl">
-          <div className="relative w-full sm:max-w-xs">
+        <div className="p-4 border-b border-slate-100 flex flex-col md:flex-row gap-4 items-stretch md:items-center justify-between bg-slate-50/50 rounded-t-xl">
+          <div className="relative w-full md:max-w-xs">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-            <Input placeholder="Search staff..." className="pl-10 bg-white" />
+            <Input placeholder="Search staff..." className="pl-10 bg-white w-full" />
           </div>
-          <div className="flex items-center gap-3 w-full sm:w-auto">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full md:w-auto">
             <Select 
-              className="w-[140px]" 
+              className="w-full md:w-[140px]" 
               options={[{label: 'All Roles', value: 'all'}, ...roles.map(r => ({label: r.name, value: r.name}))]} 
             />
             <Select 
-              className="w-[140px]" 
+              className="w-full md:w-[140px]" 
               options={[{label: 'All Status', value: 'all'}, {label: 'Active', value: 'active'}, {label: 'Inactive', value: 'inactive'}]} 
             />
-            <Button variant="outline" size="icon" className="shrink-0"><Filter size={18} /></Button>
+            <Button variant="outline" size="icon" className="shrink-0 hidden sm:flex"><Filter size={18} /></Button>
+            <Button variant="outline" className="w-full sm:hidden py-2.5 justify-center"><Filter size={18} className="mr-2" /> Filter</Button>
           </div>
         </div>
         
@@ -195,53 +196,55 @@ const StaffManagement = () => {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
               {staffList.map((staff) => (
-                <div key={staff._id || staff.id} className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow relative">
-                  <div className="absolute top-4 right-4 flex gap-1">
-                    <Button variant="ghost" size="icon" onClick={() => handleEditStaff(staff)} className="text-slate-400 hover:text-blue-600 h-8 w-8">
-                      <Edit2 size={14} />
-                    </Button>
-                    <Button variant="ghost" size="icon" onClick={() => handleDeleteStaff(staff._id || staff.id)} className="text-slate-400 hover:text-red-600 hover:bg-red-50 h-8 w-8">
-                      <Trash2 size={14} />
-                    </Button>
-                  </div>
-                  <div className="flex justify-between items-start mb-4 pr-16">
-                    <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-lg">
-                        {staff.name?.charAt(0) || 'U'}
+                <div key={staff._id || staff.id} className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow relative flex flex-col justify-between min-w-0">
+                  <div>
+                    <div className="absolute top-4 right-4 flex gap-1 z-10">
+                      <Button variant="ghost" size="icon" onClick={() => handleEditStaff(staff)} className="text-slate-400 hover:text-blue-600 h-8 w-8 bg-white/80 backdrop-blur-sm shadow-sm border border-slate-100">
+                        <Edit2 size={14} />
+                      </Button>
+                      <Button variant="ghost" size="icon" onClick={() => handleDeleteStaff(staff._id || staff.id)} className="text-slate-400 hover:text-red-600 hover:bg-red-50 h-8 w-8 bg-white/80 backdrop-blur-sm shadow-sm border border-slate-100">
+                        <Trash2 size={14} />
+                      </Button>
+                    </div>
+                    <div className="flex justify-between items-start mb-4 pr-16 min-w-0">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-lg shrink-0">
+                          {staff.name?.charAt(0) || 'U'}
+                        </div>
+                        <div className="min-w-0">
+                          <h3 className="font-bold text-slate-900 break-words leading-tight" title={staff.name}>{staff.name}</h3>
+                          <p className="text-xs text-blue-600 font-medium truncate">{staff.role}</p>
+                        </div>
                       </div>
-                      <div>
-                        <h3 className="font-bold text-slate-900">{staff.name}</h3>
-                        <p className="text-xs text-blue-600 font-medium">{staff.role}</p>
+                    </div>
+                    
+                    <div className="space-y-3 mb-1 min-w-0">
+                      <div className="flex justify-between items-center gap-2 text-sm">
+                        <span className="text-slate-500 shrink-0">Employee ID</span>
+                        <span className="font-semibold text-slate-900 truncate" title={staff.employeeId}>{staff.employeeId || '-'}</span>
                       </div>
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-3 mb-5">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-slate-500">Employee ID</span>
-                      <span className="font-semibold text-slate-900">{staff.employeeId || '-'}</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-slate-500">Email</span>
-                      <span className="font-semibold text-slate-900 truncate ml-4" title={staff.email}>{staff.email}</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-slate-500">Department</span>
-                      <span className="font-semibold text-slate-900">{staff.department || 'Administration'}</span>
-                    </div>
-                    {staff.monthlySalary !== undefined && (
-                      <div className="flex justify-between text-sm">
-                        <span className="text-slate-500">Monthly Salary</span>
-                        <span className="font-semibold text-emerald-600">
-                          {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(staff.monthlySalary)}
-                        </span>
+                      <div className="flex justify-between items-start gap-2 text-sm min-w-0">
+                        <span className="text-slate-500 shrink-0">Email</span>
+                        <span className="font-semibold text-slate-900 break-all text-right" title={staff.email}>{staff.email}</span>
                       </div>
-                    )}
-                    <div className="flex justify-between text-sm">
-                      <span className="text-slate-500">Status</span>
-                      <Badge variant={(staff.status || (staff.isActive ? 'Active' : 'Inactive')) === 'Active' ? 'success' : 'warning'}>
-                        {staff.status || (staff.isActive ? 'Active' : 'Inactive')}
-                      </Badge>
+                      <div className="flex justify-between items-center gap-2 text-sm">
+                        <span className="text-slate-500 shrink-0">Department</span>
+                        <span className="font-semibold text-slate-900 truncate">{staff.department || 'Administration'}</span>
+                      </div>
+                      {staff.monthlySalary !== undefined && (
+                        <div className="flex justify-between items-center gap-2 text-sm">
+                          <span className="text-slate-500 shrink-0">Monthly Salary</span>
+                          <span className="font-semibold text-emerald-600 shrink-0">
+                            {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(staff.monthlySalary)}
+                          </span>
+                        </div>
+                      )}
+                      <div className="flex justify-between items-center gap-2 text-sm">
+                        <span className="text-slate-500 shrink-0">Status</span>
+                        <Badge variant={(staff.status || (staff.isActive ? 'Active' : 'Inactive')) === 'Active' ? 'success' : 'warning'} className="shrink-0">
+                          {staff.status || (staff.isActive ? 'Active' : 'Inactive')}
+                        </Badge>
+                      </div>
                     </div>
                   </div>
                 </div>

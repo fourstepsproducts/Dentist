@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 
-const Sidebar = ({ role }) => {
+const Sidebar = ({ role, closeSidebar }) => {
   const clinicLinks = [
     { name: 'Dashboard', path: '/clinic/dashboard', icon: LayoutDashboard },
     { name: 'Patient Records', path: '/clinic/patient-records', icon: Users },
@@ -96,6 +96,7 @@ const Sidebar = ({ role }) => {
                     <NavLink
                       key={link.name}
                       to={link.path}
+                      onClick={closeSidebar}
                       className={({ isActive }) =>
                         cn(
                           'flex items-center px-3 py-2 text-xs font-semibold rounded-md transition-colors',
@@ -120,6 +121,7 @@ const Sidebar = ({ role }) => {
                 <NavLink
                   key={link.name}
                   to={link.path}
+                  onClick={closeSidebar}
                   className={({ isActive }) =>
                     cn(
                       'flex items-center px-3 py-2.5 text-sm font-medium rounded-md transition-colors',
@@ -148,6 +150,7 @@ const Sidebar = ({ role }) => {
                       <NavLink
                         key={link.name}
                         to={link.path}
+                        onClick={closeSidebar}
                         className={({ isActive }) =>
                           cn(
                             'flex items-center px-3 py-2.5 text-sm font-medium rounded-md transition-colors',
@@ -174,6 +177,7 @@ const Sidebar = ({ role }) => {
                       <NavLink
                         key={link.name}
                         to={link.path}
+                        onClick={closeSidebar}
                         className={({ isActive }) =>
                           cn(
                             'flex items-center px-3 py-2.5 text-sm font-medium rounded-md transition-colors',

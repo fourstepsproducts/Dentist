@@ -1,5 +1,5 @@
 import React, { useContext, useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../../../api';
 import { Users, Calendar, Clock } from 'lucide-react';
 import { AuthContext } from '../../../context/AuthContext';
 import { Card } from '../../../components/ui/Card';
@@ -19,7 +19,7 @@ const DynamicDashboard = () => {
       try {
         setLoading(true);
         const token = localStorage.getItem('token');
-        const res = await axios.get('/api/clinic-dashboard/stats', {
+        const res = await api.get('/clinic-dashboard/stats', {
           headers: { Authorization: `Bearer ${token}` }
         });
         setStats(res.data);

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import axios from 'axios';
+import api from '../../api';
 import { ChevronDown, Search, Users } from 'lucide-react';
 import { cn } from '../../lib/utils';
 
@@ -23,7 +23,7 @@ const PatientSelector = ({
     try {
       setLoading(true);
       const token = localStorage.getItem('token');
-      const res = await axios.get('/api/patients', {
+      const res = await api.get('/patients', {
         headers: { Authorization: `Bearer ${token}` }
       });
       setPatients(res.data);

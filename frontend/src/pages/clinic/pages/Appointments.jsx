@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../../../api';
 import { Card } from '../../../components/ui/Card';
 import { PatientSelector } from '../../../components/ui/PatientSelector';
 import { Button } from '../../../components/ui/Button';
@@ -22,7 +22,7 @@ const Appointments = () => {
     try {
       setLoading(true);
       const token = localStorage.getItem('token');
-      const res = await axios.get(`/api/appointments?patientId=${patientId}`, {
+      const res = await api.get(`/appointments?patientId=${patientId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setAppointments(res.data);
@@ -56,8 +56,8 @@ const Appointments = () => {
       // Combine date and time
       const dateTime = new Date(`${date}T${time}`);
 
-      await axios.post(
-        '/api/appointments',
+      await api.post(
+        '/appointments',
         {
           patient: selectedPatient._id,
           date: dateTime,

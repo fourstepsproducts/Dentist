@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../../api';
 import { Plus, Search, Phone, MapPin, Activity, Trash2 } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
@@ -32,7 +32,7 @@ const LabManagement = () => {
   const fetchSpecializations = async () => {
     try {
       const token = localStorage.getItem('token');
-      const res = await axios.get('/api/specializations', {
+      const res = await api.get('/specializations', {
         headers: { Authorization: `Bearer ${token}` }
       });
       setSpecializations(res.data);
@@ -82,7 +82,7 @@ const LabManagement = () => {
     try {
       setIsSavingSpec(true);
       const token = localStorage.getItem('token');
-      const res = await axios.post('/api/specializations', { name: newSpecName.trim() }, {
+      const res = await api.post('/specializations', { name: newSpecName.trim() }, {
         headers: { Authorization: `Bearer ${token}` }
       });
       // Refresh the list

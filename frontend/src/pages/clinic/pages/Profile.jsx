@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext } from 'react';
-import axios from 'axios';
+import api from '../../../api';
 import { AuthContext } from '../../../context/AuthContext';
 import { Card } from '../../../components/ui/Card';
 import { 
@@ -49,7 +49,7 @@ const Profile = () => {
 
   const fetchProfile = async () => {
     try {
-      const { data } = await axios.get('/api/staff/profile', {
+      const { data } = await api.get('/staff/profile', {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
       });
       setProfile(data);
@@ -91,7 +91,7 @@ const Profile = () => {
   const handleProfileSubmit = async (e) => {
     e.preventDefault();
     try {
-      const { data } = await axios.put('/api/staff/profile', editForm, {
+      const { data } = await api.put('/staff/profile', editForm, {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
       });
       setProfile(data);
@@ -119,7 +119,7 @@ const Profile = () => {
 
     setIsChangingPassword(true);
     try {
-      await axios.put('/api/staff/change-password', {
+      await api.put('/staff/change-password', {
         currentPassword: passwordForm.currentPassword,
         newPassword: passwordForm.newPassword
       }, {

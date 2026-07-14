@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../../api';
 import { Plus, Search, Filter, Edit2, Trash2, Eye, EyeOff } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
@@ -43,7 +43,7 @@ const DoctorManagement = () => {
       setIsLoading(true);
       setError(null);
       const token = localStorage.getItem('token');
-      const res = await axios.get('/api/admin/doctors', {
+      const res = await api.get('/admin/doctors', {
         headers: { Authorization: `Bearer ${token}` }
       });
       setDoctorsList(res.data);
@@ -58,7 +58,7 @@ const DoctorManagement = () => {
   const fetchRoles = async () => {
     try {
       const token = localStorage.getItem('token');
-      const res = await axios.get('/api/roles', {
+      const res = await api.get('/roles', {
         headers: { Authorization: `Bearer ${token}` }
       });
       setRoles(res.data);
@@ -130,9 +130,9 @@ const DoctorManagement = () => {
       }
 
       if (editingId) {
-        await axios.put(`/api/admin/doctors/${editingId}`, payload, config);
+        await api.put(`/admin/doctors/${editingId}`, payload, config);
       } else {
-        await axios.post('/api/admin/doctors', payload, config);
+        await api.post('/admin/doctors', payload, config);
       }
       
       closeModal();
@@ -148,7 +148,7 @@ const DoctorManagement = () => {
     
     try {
       const token = localStorage.getItem('token');
-      await axios.delete(`/api/admin/doctors/${id}`, {
+      await api.delete(`/admin/doctors/${id}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       fetchDoctors();
@@ -378,7 +378,7 @@ const DoctorManagement = () => {
             try {
               setIsSavingRole(true);
               const token = localStorage.getItem('token');
-              const res = await axios.post('/api/roles', newRoleData, {
+              const res = await api.post('/roles', newRoleData, {
                 headers: { Authorization: `Bearer ${token}` }
               });
               // Refresh roles

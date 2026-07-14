@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import axios from 'axios';
+import api from '../../../api';
 import { Card } from '../../../components/ui/Card';
 import { PatientSelector } from '../../../components/ui/PatientSelector';
 import { Button } from '../../../components/ui/Button';
@@ -35,8 +35,8 @@ const TreatmentRecords = () => {
         date: new Date(),
       };
 
-      const res = await axios.post(
-        `/api/patients/${selectedPatient._id}/records`,
+      const res = await api.post(
+        `/patients/${selectedPatient._id}/records`,
         { type: 'treatments', payload },
         { headers: { Authorization: `Bearer ${token}` } }
       );

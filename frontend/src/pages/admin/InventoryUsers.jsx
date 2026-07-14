@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext } from 'react';
-import axios from 'axios';
+import api from '../../api';
 import { AuthContext } from '../../context/AuthContext';
 import UserTable from '../../components/UserTable';
 import UserForm from '../../components/UserForm';
@@ -15,7 +15,7 @@ const InventoryUsers = () => {
   const fetchUsers = async () => {
     try {
       const token = localStorage.getItem('token');
-      const res = await axios.get('/api/users/inventory', {
+      const res = await api.get('/users/inventory', {
         headers: { Authorization: `Bearer ${token}` }
       });
       setUsers(res.data);
@@ -34,9 +34,9 @@ const InventoryUsers = () => {
       const config = { headers: { Authorization: `Bearer ${token}` } };
       
       if (editingUser) {
-        await axios.put(`/api/users/${editingUser._id}`, formData, config);
+        await api.put(`/users/${editingUser._id}`, formData, config);
       } else {
-        await axios.post('/api/users', formData, config);
+        await api.post('/users', formData, config);
       }
       
       setIsModalOpen(false);
@@ -51,7 +51,7 @@ const InventoryUsers = () => {
     if (window.confirm('Are you sure you want to delete this user?')) {
       try {
         const token = localStorage.getItem('token');
-        await axios.delete(`/api/users/${id}`, {
+        await api.delete(`/users/${id}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         fetchUsers();

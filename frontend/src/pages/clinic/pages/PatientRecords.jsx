@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../../../api';
 import { Plus, Search, Eye, Edit2, Trash2, Calendar, Phone, Mail, MapPin, User, Activity, ShieldAlert } from 'lucide-react';
 import { Button } from '../../../components/ui/Button';
 import { Input } from '../../../components/ui/Input';
@@ -37,7 +37,7 @@ const PatientRecords = () => {
     try {
       setLoading(true);
       const token = localStorage.getItem('token');
-      const res = await axios.get(`/api/patients?search=${search}`, {
+      const res = await api.get(`/patients?search=${search}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setPatients(res.data);
@@ -110,12 +110,12 @@ const PatientRecords = () => {
       const token = localStorage.getItem('token');
       if (editingPatient) {
         // Edit existing
-        await axios.put(`/api/patients/${editingPatient._id}`, formData, {
+        await api.put(`/patients/${editingPatient._id}`, formData, {
           headers: { Authorization: `Bearer ${token}` },
         });
       } else {
         // Create new
-        await axios.post('/api/patients', formData, {
+        await api.post('/patients', formData, {
           headers: { Authorization: `Bearer ${token}` },
         });
       }
@@ -134,7 +134,7 @@ const PatientRecords = () => {
     if (window.confirm('Are you sure you want to delete this patient record? This will permanently delete all clinical logs associated with them.')) {
       try {
         const token = localStorage.getItem('token');
-        await axios.delete(`/api/patients/${id}`, {
+        await api.delete(`/patients/${id}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         fetchPatients(searchQuery);
@@ -148,7 +148,7 @@ const PatientRecords = () => {
   const handleOpenDetails = async (patient) => {
     try {
       const token = localStorage.getItem('token');
-      const res = await axios.get(`/api/patients/${patient._id}`, {
+      const res = await api.get(`/patients/${patient._id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setSelectedPatient(res.data);

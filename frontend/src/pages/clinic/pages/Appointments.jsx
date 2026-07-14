@@ -6,6 +6,7 @@ import { Button } from '../../../components/ui/Button';
 import { Input } from '../../../components/ui/Input';
 import { Plus, HelpCircle, Calendar, Clock, BadgeAlert } from 'lucide-react';
 import { cn } from '../../../lib/utils';
+import { showToast } from '../../../utils/toast';
 
 const Appointments = () => {
   const [selectedPatient, setSelectedPatient] = useState(null);
@@ -70,9 +71,10 @@ const Appointments = () => {
       setTime('');
       setStatus('Scheduled');
       fetchAppointments(selectedPatient._id);
+      showToast.success('Appointment scheduled successfully.');
     } catch (err) {
       console.error('Failed to schedule appointment:', err);
-      alert('Failed to schedule appointment');
+      showToast.error('Failed to schedule appointment.');
     } finally {
       setSubmitting(false);
     }

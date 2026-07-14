@@ -7,7 +7,9 @@ import { Badge } from '../../components/ui/Badge';
 import { Select } from '../../components/ui/Select';
 import { SearchableSelect } from '../../components/ui/SearchableSelect';
 import { Modal } from '../../components/ui/Modal';
+import { ConfirmModal } from '../../components/ui/ConfirmModal';
 import { Card } from '../../components/ui/Card';
+import { showToast } from '../../utils/toast';
 
 const StaffManagement = () => {
   const [staffList, setStaffList] = useState([]);
@@ -23,6 +25,9 @@ const StaffManagement = () => {
 
   const [newRoleData, setNewRoleData] = useState({ name: '', description: '' });
   const [isSavingRole, setIsSavingRole] = useState(false);
+
+  const [deleteConfirm, setDeleteConfirm] = useState({ isOpen: false, staffId: null, staffName: '' });
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const defaultFormData = {
     name: '',
@@ -98,7 +103,7 @@ const StaffManagement = () => {
     e.preventDefault();
     if (formData.password || formData.confirmPassword || !editingId) {
       if (formData.password !== formData.confirmPassword) {
-        alert("Passwords do not match!");
+        showToast.warning('Passwords do not match!');
         return;
       }
     }
@@ -122,30 +127,39 @@ const StaffManagement = () => {
 
       if (editingId) {
         await api.put(`/admin/staff/${editingId}`, payload, config);
+        showToast.success('Staff member updated successfully.');
       } else {
         await api.post('/admin/staff', payload, config);
+        showToast.success('Staff member created successfully.');
       }
       
       closeModal();
       fetchStaff();
     } catch (err) {
       console.error(err);
-      alert(err.response?.data?.message || 'Error saving staff member');
+      showToast.error(err.response?.data?.message || 'Error saving staff member.');
     }
   };
 
-  const handleDeleteStaff = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this staff member?')) return;
-    
+  const handleDeleteStaff = (staff) => {
+    setDeleteConfirm({ isOpen: true, staffId: staff._id || staff.id, staffName: staff.name });
+  };
+
+  const executeDeleteStaff = async () => {
+    setIsDeleting(true);
     try {
       const token = localStorage.getItem('token');
-      await api.delete(`/admin/staff/${id}`, {
+      await api.delete(`/admin/staff/${deleteConfirm.staffId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
+      showToast.success('Staff member deleted successfully.');
+      setDeleteConfirm({ isOpen: false, staffId: null, staffName: '' });
       fetchStaff();
     } catch (err) {
       console.error(err);
-      alert('Error deleting staff member');
+      showToast.error(err.response?.data?.message || 'Error deleting staff member.');
+    } finally {
+      setIsDeleting(false);
     }
   };
   
@@ -202,7 +216,7 @@ const StaffManagement = () => {
                       <Button variant="ghost" size="icon" onClick={() => handleEditStaff(staff)} className="text-slate-400 hover:text-blue-600 h-8 w-8 bg-white/80 backdrop-blur-sm shadow-sm border border-slate-100">
                         <Edit2 size={14} />
                       </Button>
-                      <Button variant="ghost" size="icon" onClick={() => handleDeleteStaff(staff._id || staff.id)} className="text-slate-400 hover:text-red-600 hover:bg-red-50 h-8 w-8 bg-white/80 backdrop-blur-sm shadow-sm border border-slate-100">
+                      <Button variant="ghost" size="icon" onClick={() => handleDeleteStaff(staff)} className="text-slate-400 hover:text-red-600 hover:bg-red-50 h-8 w-8 bg-white/80 backdrop-blur-sm shadow-sm border border-slate-100">
                         <Trash2 size={14} />
                       </Button>
                     </div>
@@ -253,6 +267,17 @@ const StaffManagement = () => {
           )}
         </div>
       </Card>
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmModal
+        isOpen={deleteConfirm.isOpen}
+        onClose={() => setDeleteConfirm({ isOpen: false, staffId: null, staffName: '' })}
+        onConfirm={executeDeleteStaff}
+        title="Delete Staff Member"
+        description={`Are you sure you want to delete "${deleteConfirm.staffName}"? This action cannot be undone.`}
+        confirmText="Delete"
+        isLoading={isDeleting}
+      />
 
       {/* Main Staff Form Modal */}
       <Modal isOpen={isModalOpen} onClose={closeModal} title={editingId ? "Edit Staff" : "Add New Staff"} maxWidth="max-w-md">
@@ -387,7 +412,7 @@ const StaffManagement = () => {
               setNewRoleData({ name: '', description: '' });
             } catch (err) {
               console.error(err);
-              alert(err.response?.data?.message || 'Error creating role');
+              showToast.error(err.response?.data?.message || 'Error creating role.');
             } finally {
               setIsSavingRole(false);
             }

@@ -8,6 +8,8 @@ import {
   Plus, Search, Edit, Trash2, Download, Upload, 
   Barcode, CheckCircle, XCircle 
 } from 'lucide-react';
+import ConfirmModal from '../../../components/ui/ConfirmModal';
+import { showToast } from '../../../utils/toast';
 
 const ItemManagement = () => {
   const { items, addItem, updateItem, deleteItem, suppliers, settings } = useContext(InventoryContext);
@@ -24,6 +26,7 @@ const ItemManagement = () => {
   // CRUD Modals
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
+  const [deleteConfirm, setDeleteConfirm] = useState({ isOpen: false, itemId: null });
 
   // Barcode Modal
   const [barcodeItem, setBarcodeItem] = useState(null);
@@ -93,9 +96,15 @@ const ItemManagement = () => {
   };
 
   const handleDeleteClick = (id) => {
-    if (window.confirm('Are you sure you want to delete this inventory item? This will remove all associated logs.')) {
-      deleteItem(id);
+    setDeleteConfirm({ isOpen: true, itemId: id });
+  };
+
+  const executeDelete = () => {
+    if (deleteConfirm.itemId) {
+      deleteItem(deleteConfirm.itemId);
+      showToast.success('Item deleted successfully.');
     }
+    setDeleteConfirm({ isOpen: false, itemId: null });
   };
 
   // Simulators
@@ -117,7 +126,7 @@ const ItemManagement = () => {
   };
 
   const handleImportExcelSimulate = () => {
-    alert("Excel/CSV import simulated! Loading 3 new restorative items into inventory...");
+    showToast.info("Excel/CSV import simulated! Loading 3 new restorative items into inventory...");
     addItem({ name: 'Dental Composites Kit A', category: 'Restorative', unit: 'Set', brand: '3M ESPE', description: 'Restoration composites kit imported', minStock: 5, maxStock: 20, quantity: 15, reservedQuantity: 0, supplierId: 1, costPrice: 95.00, sellingPrice: 150.00, status: 'Active', expiryDate: '2028-10-10' });
     addItem({ name: 'Bonding Agent Refill', category: 'Restorative', unit: 'Bottle', brand: 'Hu-Friedy', description: 'Single bond adhesive', minStock: 10, maxStock: 40, quantity: 20, reservedQuantity: 0, supplierId: 2, costPrice: 35.00, sellingPrice: 50.00, status: 'Active', expiryDate: '2027-05-15' });
   };
@@ -478,11 +487,21 @@ const ItemManagement = () => {
 
             <div className="flex gap-2">
               <Button variant="outline" className="flex-1" onClick={() => setBarcodeItem(null)}>Close</Button>
-              <Button className="flex-1" onClick={() => { alert('Sending print job to barcode printer...'); setBarcodeItem(null); }}>Print Barcode</Button>
+              <Button className="flex-1" onClick={() => { showToast.success('Sending print job to barcode printer...'); setBarcodeItem(null); }}>Print Barcode</Button>
             </div>
           </Card>
         </div>
       )}
+
+      {/* Delete Confirmation */}
+      <ConfirmModal
+        isOpen={deleteConfirm.isOpen}
+        onClose={() => setDeleteConfirm({ isOpen: false, itemId: null })}
+        onConfirm={executeDelete}
+        title="Delete Inventory Item"
+        description="Are you sure you want to delete this inventory item? This will remove all associated logs."
+        confirmText="Delete Item"
+      />
     </div>
   );
 };

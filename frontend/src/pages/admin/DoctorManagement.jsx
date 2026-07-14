@@ -7,7 +7,9 @@ import { Badge } from '../../components/ui/Badge';
 import { Select } from '../../components/ui/Select';
 import { SearchableSelect } from '../../components/ui/SearchableSelect';
 import { Modal } from '../../components/ui/Modal';
+import { ConfirmModal } from '../../components/ui/ConfirmModal';
 import { Card } from '../../components/ui/Card';
+import { showToast } from '../../utils/toast';
 
 const DoctorManagement = () => {
   const [doctorsList, setDoctorsList] = useState([]);
@@ -23,6 +25,9 @@ const DoctorManagement = () => {
 
   const [newRoleData, setNewRoleData] = useState({ name: '', description: '' });
   const [isSavingRole, setIsSavingRole] = useState(false);
+
+  const [deleteConfirm, setDeleteConfirm] = useState({ isOpen: false, doctorId: null, doctorName: '' });
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const defaultFormData = {
     name: '',
@@ -104,7 +109,7 @@ const DoctorManagement = () => {
     e.preventDefault();
     if (formData.password || formData.confirmPassword || !editingId) {
       if (formData.password !== formData.confirmPassword) {
-        alert("Passwords do not match!");
+        showToast.warning('Passwords do not match!');
         return;
       }
     }
@@ -119,7 +124,7 @@ const DoctorManagement = () => {
         phone: formData.phone,
         employeeId: formData.employeeId,
         role: formData.role,
-        specialization: formData.role, // For external doctors, the role is their specialization
+        specialization: formData.role,
         qualification: formData.qualification,
         experience: formData.experience,
         status: 'Active',
@@ -131,30 +136,39 @@ const DoctorManagement = () => {
 
       if (editingId) {
         await api.put(`/admin/doctors/${editingId}`, payload, config);
+        showToast.success('Doctor profile updated successfully.');
       } else {
         await api.post('/admin/doctors', payload, config);
+        showToast.success('Doctor profile created successfully.');
       }
       
       closeModal();
       fetchDoctors();
     } catch (err) {
       console.error(err);
-      alert(err.response?.data?.message || 'Error saving doctor profile');
+      showToast.error(err.response?.data?.message || 'Error saving doctor profile.');
     }
   };
 
-  const handleDeleteDoctor = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this doctor?')) return;
-    
+  const handleDeleteDoctor = (doc) => {
+    setDeleteConfirm({ isOpen: true, doctorId: doc._id, doctorName: doc.name });
+  };
+
+  const executeDeleteDoctor = async () => {
+    setIsDeleting(true);
     try {
       const token = localStorage.getItem('token');
-      await api.delete(`/admin/doctors/${id}`, {
+      await api.delete(`/admin/doctors/${deleteConfirm.doctorId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
+      showToast.success('Doctor deleted successfully.');
+      setDeleteConfirm({ isOpen: false, doctorId: null, doctorName: '' });
       fetchDoctors();
     } catch (err) {
       console.error(err);
-      alert('Error deleting doctor');
+      showToast.error(err.response?.data?.message || 'Error deleting doctor.');
+    } finally {
+      setIsDeleting(false);
     }
   };
   
@@ -200,14 +214,14 @@ const DoctorManagement = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
               {doctorsList.map((doc) => (
                 <div key={doc._id} className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow relative">
-                  <div className="absolute top-4 right-4 flex gap-1">
-                    <Button variant="ghost" size="icon" onClick={() => handleEditDoctor(doc)} className="text-slate-400 hover:text-blue-600 h-8 w-8">
-                      <Edit2 size={14} />
-                    </Button>
-                    <Button variant="ghost" size="icon" onClick={() => handleDeleteDoctor(doc._id)} className="text-slate-400 hover:text-red-600 hover:bg-red-50 h-8 w-8">
-                      <Trash2 size={14} />
-                    </Button>
-                  </div>
+                    <div className="absolute top-4 right-4 flex gap-1">
+                      <Button variant="ghost" size="icon" onClick={() => handleEditDoctor(doc)} className="text-slate-400 hover:text-blue-600 h-8 w-8">
+                        <Edit2 size={14} />
+                      </Button>
+                      <Button variant="ghost" size="icon" onClick={() => handleDeleteDoctor(doc)} className="text-slate-400 hover:text-red-600 hover:bg-red-50 h-8 w-8">
+                        <Trash2 size={14} />
+                      </Button>
+                    </div>
                   <div className="flex justify-between items-start mb-4 pr-16">
                     <div className="flex items-center gap-3">
                       <div className="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-lg">
@@ -241,6 +255,17 @@ const DoctorManagement = () => {
           )}
         </div>
       </Card>
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmModal
+        isOpen={deleteConfirm.isOpen}
+        onClose={() => setDeleteConfirm({ isOpen: false, doctorId: null, doctorName: '' })}
+        onConfirm={executeDeleteDoctor}
+        title="Delete Doctor"
+        description={`Are you sure you want to delete "${deleteConfirm.doctorName}"? This action cannot be undone.`}
+        confirmText="Delete"
+        isLoading={isDeleting}
+      />
 
       {/* Main Doctor Form Modal */}
       <Modal isOpen={isModalOpen} onClose={closeModal} title={editingId ? "Edit Doctor" : "Add New Doctor"} maxWidth="max-w-2xl">
@@ -390,7 +415,7 @@ const DoctorManagement = () => {
               setNewRoleData({ name: '', description: '' });
             } catch (err) {
               console.error(err);
-              alert(err.response?.data?.message || 'Error creating role');
+              showToast.error(err.response?.data?.message || 'Error creating role.');
             } finally {
               setIsSavingRole(false);
             }

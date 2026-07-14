@@ -7,6 +7,7 @@ import {
   FileSpreadsheet, FileText, Printer, 
   Download, Loader2, Sparkles 
 } from 'lucide-react';
+import { showToast } from '../../../utils/toast';
 
 const Reports = () => {
   const { items, purchaseOrders, payments, suppliers, stockTransactions } = useContext(InventoryContext);
@@ -21,7 +22,7 @@ const Reports = () => {
       if (format === 'print') {
         window.print();
       } else {
-        alert(`Report downloaded successfully in ${format} format!`);
+        showToast.success(`Report downloaded successfully in ${format} format!`);
       }
     }, 1200);
   };

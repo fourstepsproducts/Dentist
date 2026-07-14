@@ -4,12 +4,16 @@ import { AuthContext } from '../../context/AuthContext';
 import UserTable from '../../components/UserTable';
 import UserForm from '../../components/UserForm';
 import { Button } from '../../components/ui/Button';
+import { ConfirmModal } from '../../components/ui/ConfirmModal';
 import { Plus } from 'lucide-react';
+import { showToast } from '../../utils/toast';
 
 const ClinicalUsers = () => {
   const [users, setUsers] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
+  const [deleteConfirm, setDeleteConfirm] = useState({ isOpen: false, userId: null, userName: '' });
+  const [isDeleting, setIsDeleting] = useState(false);
   const { user } = useContext(AuthContext);
 
   const fetchUsers = async () => {
@@ -35,29 +39,39 @@ const ClinicalUsers = () => {
       
       if (editingUser) {
         await api.put(`/users/${editingUser._id}`, formData, config);
+        showToast.success('User updated successfully.');
       } else {
         await api.post('/users', formData, config);
+        showToast.success('User created successfully.');
       }
       
       setIsModalOpen(false);
       setEditingUser(null);
       fetchUsers();
     } catch (error) {
-      alert(error.response?.data?.message || 'Action failed');
+      showToast.error(error.response?.data?.message || 'Action failed.');
     }
   };
 
-  const handleDelete = async (id) => {
-    if (window.confirm('Are you sure you want to delete this user?')) {
-      try {
-        const token = localStorage.getItem('token');
-        await api.delete(`/users/${id}`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        fetchUsers();
-      } catch (error) {
-        console.error('Failed to delete', error);
-      }
+  const handleDelete = (userToDelete) => {
+    setDeleteConfirm({ isOpen: true, userId: userToDelete._id, userName: userToDelete.name });
+  };
+
+  const executeDelete = async () => {
+    setIsDeleting(true);
+    try {
+      const token = localStorage.getItem('token');
+      await api.delete(`/users/${deleteConfirm.userId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      showToast.success('User deleted successfully.');
+      setDeleteConfirm({ isOpen: false, userId: null, userName: '' });
+      fetchUsers();
+    } catch (error) {
+      showToast.error(error.response?.data?.message || 'Failed to delete user.');
+      console.error('Failed to delete', error);
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -76,8 +90,18 @@ const ClinicalUsers = () => {
 
       <UserTable 
         users={users} 
-        onEdit={(user) => { setEditingUser(user); setIsModalOpen(true); }} 
+        onEdit={(u) => { setEditingUser(u); setIsModalOpen(true); }} 
         onDelete={handleDelete} 
+      />
+
+      <ConfirmModal
+        isOpen={deleteConfirm.isOpen}
+        onClose={() => setDeleteConfirm({ isOpen: false, userId: null, userName: '' })}
+        onConfirm={executeDelete}
+        title="Delete User"
+        description={`Are you sure you want to delete "${deleteConfirm.userName}"? This action cannot be undone.`}
+        confirmText="Delete"
+        isLoading={isDeleting}
       />
 
       {isModalOpen && (

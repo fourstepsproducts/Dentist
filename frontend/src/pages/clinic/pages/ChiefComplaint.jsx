@@ -4,6 +4,7 @@ import { Card } from '../../../components/ui/Card';
 import { PatientSelector } from '../../../components/ui/PatientSelector';
 import { Button } from '../../../components/ui/Button';
 import { Plus, HelpCircle, Activity } from 'lucide-react';
+import { showToast } from '../../../utils/toast';
 
 const ChiefComplaint = () => {
   const [selectedPatient, setSelectedPatient] = useState(null);
@@ -36,9 +37,10 @@ const ChiefComplaint = () => {
       // Update local state with updated patient data
       setSelectedPatient(res.data);
       setComplaintText('');
+      showToast.success('Chief complaint logged successfully.');
     } catch (err) {
       console.error('Failed to log chief complaint:', err);
-      alert('Failed to log chief complaint');
+      showToast.error('Failed to log chief complaint.');
     } finally {
       setSubmitting(false);
     }

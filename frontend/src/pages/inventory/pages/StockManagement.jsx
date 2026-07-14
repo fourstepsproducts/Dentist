@@ -5,6 +5,7 @@ import { Input } from '../../../components/ui/Input';
 import { Select } from '../../../components/ui/Select';
 import { Card } from '../../../components/ui/Card';
 import { ArrowDown, ArrowUp, Edit, History, Plus, RotateCcw, ShieldAlert, Sparkles } from 'lucide-react';
+import { showToast } from '../../../utils/toast';
 
 const StockManagement = () => {
   const { items, stockTransactions, addStockTransaction, settings } = useContext(InventoryContext);
@@ -31,7 +32,7 @@ const StockManagement = () => {
     let adjustedQty = qty;
     if (['Stock Out', 'Stock Transfer', 'Damaged Stock'].includes(form.type)) {
       if (selectedItem && selectedItem.quantity < qty) {
-        alert(`Insufficient stock! ${selectedItem.name} only has ${selectedItem.quantity} units available.`);
+        showToast.warning(`Insufficient stock! ${selectedItem.name} only has ${selectedItem.quantity} units available.`);
         return;
       }
       adjustedQty = -qty;
@@ -40,7 +41,7 @@ const StockManagement = () => {
       // If we assume user enters positive but selects type "Stock Adjustment (Reduction)", we can handle it.
       // For simplicity, we just check if they entered negative or positive, and check bounds.
       if (qty < 0 && selectedItem && selectedItem.quantity < Math.abs(qty)) {
-        alert(`Insufficient stock for adjustment!`);
+        showToast.warning(`Insufficient stock for adjustment!`);
         return;
       }
       adjustedQty = qty;
@@ -60,7 +61,7 @@ const StockManagement = () => {
       remarks: ''
     });
 
-    alert('Stock transaction recorded successfully.');
+    showToast.success('Stock transaction recorded successfully.');
     setActiveTab('history');
   };
 

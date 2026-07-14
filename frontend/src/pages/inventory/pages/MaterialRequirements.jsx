@@ -8,6 +8,7 @@ import {
   CheckCircle, XCircle, AlertCircle, Plus, 
   HelpCircle, CheckCircle2, ChevronRight 
 } from 'lucide-react';
+import { showToast } from '../../../utils/toast';
 
 const MaterialRequirements = () => {
   const { 
@@ -30,7 +31,7 @@ const MaterialRequirements = () => {
     });
     setIsModalOpen(false);
     setNewRequest({ labId: '', itemId: '', requestedQuantity: '', priority: 'Medium', requiredDate: '' });
-    alert('Laboratory material request added.');
+    showToast.success('Laboratory material request added.');
   };
 
   const getPriorityBadge = (priority) => {
@@ -43,7 +44,7 @@ const MaterialRequirements = () => {
 
   const handleAction = (id, action) => {
     updateMaterialRequirementStatus(id, action);
-    alert(`Requirement request marked as ${action}.`);
+    showToast.success(`Requirement request marked as ${action}.`);
   };
 
   return (

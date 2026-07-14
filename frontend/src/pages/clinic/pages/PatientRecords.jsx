@@ -5,7 +5,9 @@ import { Button } from '../../../components/ui/Button';
 import { Input } from '../../../components/ui/Input';
 import { Card } from '../../../components/ui/Card';
 import { Modal } from '../../../components/ui/Modal';
+import { ConfirmModal } from '../../../components/ui/ConfirmModal';
 import { Badge } from '../../../components/ui/Badge';
+import { showToast } from '../../../utils/toast';
 
 const PatientRecords = () => {
   const [patients, setPatients] = useState([]);
@@ -15,6 +17,8 @@ const PatientRecords = () => {
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [selectedPatient, setSelectedPatient] = useState(null);
   const [editingPatient, setEditingPatient] = useState(null);
+  const [deleteConfirm, setDeleteConfirm] = useState({ isOpen: false, patientId: null, patientName: '' });
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Form State
   const defaultFormData = {
@@ -101,7 +105,7 @@ const PatientRecords = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.name || !formData.phone || !formData.dateOfBirth || !formData.gender || !formData.address) {
-      alert('Please fill in all required fields.');
+      showToast.warning('Please fill in all required fields.');
       return;
     }
 
@@ -109,39 +113,46 @@ const PatientRecords = () => {
       setIsSaving(true);
       const token = localStorage.getItem('token');
       if (editingPatient) {
-        // Edit existing
         await api.put(`/patients/${editingPatient._id}`, formData, {
           headers: { Authorization: `Bearer ${token}` },
         });
+        showToast.success('Patient record updated successfully.');
       } else {
-        // Create new
         await api.post('/patients', formData, {
           headers: { Authorization: `Bearer ${token}` },
         });
+        showToast.success('Patient registered successfully.');
       }
       setIsRegModalOpen(false);
       setFormData(defaultFormData);
       fetchPatients(searchQuery);
     } catch (err) {
       console.error(err);
-      alert(err.response?.data?.message || 'Error saving patient');
+      showToast.error(err.response?.data?.message || 'Error saving patient.');
     } finally {
       setIsSaving(false);
     }
   };
 
-  const handleDelete = async (id) => {
-    if (window.confirm('Are you sure you want to delete this patient record? This will permanently delete all clinical logs associated with them.')) {
-      try {
-        const token = localStorage.getItem('token');
-        await api.delete(`/patients/${id}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        fetchPatients(searchQuery);
-      } catch (err) {
-        console.error(err);
-        alert(err.response?.data?.message || 'Error deleting patient');
-      }
+  const handleDelete = (patient) => {
+    setDeleteConfirm({ isOpen: true, patientId: patient._id, patientName: patient.name });
+  };
+
+  const executeDelete = async () => {
+    setIsDeleting(true);
+    try {
+      const token = localStorage.getItem('token');
+      await api.delete(`/patients/${deleteConfirm.patientId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      showToast.success('Patient record deleted successfully.');
+      setDeleteConfirm({ isOpen: false, patientId: null, patientName: '' });
+      fetchPatients(searchQuery);
+    } catch (err) {
+      console.error(err);
+      showToast.error(err.response?.data?.message || 'Error deleting patient.');
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -155,7 +166,7 @@ const PatientRecords = () => {
       setIsDetailsModalOpen(true);
     } catch (err) {
       console.error(err);
-      alert('Error fetching patient history details');
+      showToast.error('Error fetching patient history details.');
     }
   };
 
@@ -266,7 +277,7 @@ const PatientRecords = () => {
                           <Edit2 size={15} />
                         </button>
                         <button
-                          onClick={() => handleDelete(p._id)}
+                          onClick={() => handleDelete(p)}
                           className="text-slate-400 hover:text-red-600 hover:bg-red-50 p-1.5 rounded-lg transition-colors"
                           title="Delete Patient"
                         >
@@ -281,6 +292,17 @@ const PatientRecords = () => {
           </table>
         </div>
       </Card>
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmModal
+        isOpen={deleteConfirm.isOpen}
+        onClose={() => setDeleteConfirm({ isOpen: false, patientId: null, patientName: '' })}
+        onConfirm={executeDelete}
+        title="Delete Patient Record"
+        description={`Are you sure you want to delete "${deleteConfirm.patientName}"? This will permanently delete all clinical logs associated with them.`}
+        confirmText="Delete"
+        isLoading={isDeleting}
+      />
 
       {/* Registration/Edit Modal */}
       <Modal

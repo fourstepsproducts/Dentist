@@ -5,6 +5,7 @@ import { PatientSelector } from '../../../components/ui/PatientSelector';
 import { Button } from '../../../components/ui/Button';
 import { Input } from '../../../components/ui/Input';
 import { Plus, HelpCircle, FileText } from 'lucide-react';
+import { showToast } from '../../../utils/toast';
 
 const DiagnosisTreatment = () => {
   const [selectedPatient, setSelectedPatient] = useState(null);
@@ -40,9 +41,10 @@ const DiagnosisTreatment = () => {
       setSelectedPatient(res.data);
       setDiagnosis('');
       setTreatmentPlan('');
+      showToast.success('Diagnosis logged successfully.');
     } catch (err) {
       console.error('Failed to log diagnosis:', err);
-      alert('Failed to log diagnosis');
+      showToast.error('Failed to log diagnosis.');
     } finally {
       setSubmitting(false);
     }

@@ -8,6 +8,8 @@ import {
   Settings as SettingsIcon, Tag, Ruler, Scale, 
   FileText, Shield, HardDrive, BellRing 
 } from 'lucide-react';
+import ConfirmModal from '../../../components/ui/ConfirmModal';
+import { showToast } from '../../../utils/toast';
 
 const Settings = () => {
   const { settings, setSettings } = useContext(InventoryContext);
@@ -18,11 +20,14 @@ const Settings = () => {
   const [newCat, setNewCat] = useState('');
   const [newUnit, setNewUnit] = useState('');
 
+  const [catDeleteConfirm, setCatDeleteConfirm] = useState({ isOpen: false, cat: null });
+  const [unitDeleteConfirm, setUnitDeleteConfirm] = useState({ isOpen: false, unit: null });
+
   const handleAddCat = (e) => {
     e.preventDefault();
     if (!newCat.trim()) return;
     if (settings.categories.includes(newCat.trim())) {
-      alert('Category already exists!');
+      showToast.warning('Category already exists!');
       return;
     }
     setSettings(prev => ({
@@ -33,19 +38,25 @@ const Settings = () => {
   };
 
   const handleRemoveCat = (cat) => {
-    if (window.confirm(`Delete category "${cat}"?`)) {
+    setCatDeleteConfirm({ isOpen: true, cat });
+  };
+
+  const executeDeleteCat = () => {
+    if (catDeleteConfirm.cat) {
       setSettings(prev => ({
         ...prev,
-        categories: prev.categories.filter(c => c !== cat)
+        categories: prev.categories.filter(c => c !== catDeleteConfirm.cat)
       }));
+      showToast.success('Category deleted.');
     }
+    setCatDeleteConfirm({ isOpen: false, cat: null });
   };
 
   const handleAddUnit = (e) => {
     e.preventDefault();
     if (!newUnit.trim()) return;
     if (settings.units.includes(newUnit.trim())) {
-      alert('Unit already exists!');
+      showToast.warning('Unit already exists!');
       return;
     }
     setSettings(prev => ({
@@ -56,21 +67,27 @@ const Settings = () => {
   };
 
   const handleRemoveUnit = (unit) => {
-    if (window.confirm(`Delete unit "${unit}"?`)) {
+    setUnitDeleteConfirm({ isOpen: true, unit });
+  };
+
+  const executeDeleteUnit = () => {
+    if (unitDeleteConfirm.unit) {
       setSettings(prev => ({
         ...prev,
-        units: prev.units.filter(u => u !== unit)
+        units: prev.units.filter(u => u !== unitDeleteConfirm.unit)
       }));
+      showToast.success('Unit deleted.');
     }
+    setUnitDeleteConfirm({ isOpen: false, unit: null });
   };
 
   const handleSaveTaxBarcode = (e) => {
     e.preventDefault();
-    alert('Tax and Barcode settings updated successfully.');
+    showToast.success('Tax and Barcode settings updated successfully.');
   };
 
   const handleBackup = () => {
-    alert('Simulating Database backup... Full inventory dataset downloaded as json file.');
+    showToast.info('Simulating Database backup... Full inventory dataset downloaded as json file.');
     const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify({ settings }));
     const dlAnchorElem = document.createElement('a');
     dlAnchorElem.setAttribute("href",     dataStr     );
@@ -311,6 +328,24 @@ const Settings = () => {
           )}
         </Card>
       </div>
+
+      <ConfirmModal
+        isOpen={catDeleteConfirm.isOpen}
+        onClose={() => setCatDeleteConfirm({ isOpen: false, cat: null })}
+        onConfirm={executeDeleteCat}
+        title="Delete Category"
+        description={`Are you sure you want to delete the category "${catDeleteConfirm.cat}"?`}
+        confirmText="Delete Category"
+      />
+
+      <ConfirmModal
+        isOpen={unitDeleteConfirm.isOpen}
+        onClose={() => setUnitDeleteConfirm({ isOpen: false, unit: null })}
+        onConfirm={executeDeleteUnit}
+        title="Delete Unit"
+        description={`Are you sure you want to delete the unit "${unitDeleteConfirm.unit}"?`}
+        confirmText="Delete Unit"
+      />
     </div>
   );
 };

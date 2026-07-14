@@ -6,6 +6,7 @@ import { Button } from '../../../components/ui/Button';
 import { Input } from '../../../components/ui/Input';
 import { Plus, HelpCircle, Activity, DollarSign } from 'lucide-react';
 import { cn } from '../../../lib/utils';
+import { showToast } from '../../../utils/toast';
 
 const TreatmentRecords = () => {
   const [selectedPatient, setSelectedPatient] = useState(null);
@@ -45,9 +46,10 @@ const TreatmentRecords = () => {
       setName('');
       setCost('');
       setStatus('Pending');
+      showToast.success('Treatment record logged successfully.');
     } catch (err) {
       console.error('Failed to log treatment:', err);
-      alert('Failed to log treatment');
+      showToast.error('Failed to log treatment.');
     } finally {
       setSubmitting(false);
     }

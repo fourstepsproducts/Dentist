@@ -5,6 +5,7 @@ import { Input } from '../../../components/ui/Input';
 import { Select } from '../../../components/ui/Select';
 import { Card } from '../../../components/ui/Card';
 import { Plus, Search, DollarSign, CheckCircle2, ShieldAlert } from 'lucide-react';
+import { showToast } from '../../../utils/toast';
 
 const SupplierPayments = () => {
   const { payments, addPayment, suppliers } = useContext(InventoryContext);
@@ -32,7 +33,7 @@ const SupplierPayments = () => {
 
     const amt = Number(amountPaid);
     if (amt <= 0 || amt > invoiceObj.balance) {
-      alert(`Invalid payment amount. Balance is $${invoiceObj.balance}.`);
+      showToast.warning(`Invalid payment amount. Balance is $${invoiceObj.balance}.`);
       return;
     }
 
@@ -45,7 +46,7 @@ const SupplierPayments = () => {
     setIsModalOpen(false);
     setInvoiceNumber('');
     setAmountPaid('');
-    alert('Payment recorded successfully.');
+    showToast.success('Payment recorded successfully.');
   };
 
   const filtered = payments.filter(p => {

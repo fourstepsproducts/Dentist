@@ -5,8 +5,10 @@ import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Badge } from '../../components/ui/Badge';
 import { Modal } from '../../components/ui/Modal';
+import { ConfirmModal } from '../../components/ui/ConfirmModal';
 import { Card } from '../../components/ui/Card';
 import { SearchableMultiSelect } from '../../components/ui/SearchableMultiSelect';
+import { showToast } from '../../utils/toast';
 
 const LabManagement = () => {
   const [labs, setLabs] = useState([]);
@@ -18,6 +20,8 @@ const LabManagement = () => {
   const [isNewSpecModalOpen, setIsNewSpecModalOpen] = useState(false);
   const [newSpecName, setNewSpecName] = useState('');
   const [isSavingSpec, setIsSavingSpec] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState({ isOpen: false, labId: null, labName: '' });
+  const [isDeleting, setIsDeleting] = useState(false);
   
   const defaultFormData = {
     name: '',
@@ -52,7 +56,7 @@ const LabManagement = () => {
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!formData.name || !formData.phone || !formData.address || formData.specialization.length === 0) {
-      alert("Please fill in all fields and select at least one specialization.");
+      showToast.warning('Please fill in all fields and select at least one specialization.');
       return;
     }
 
@@ -68,12 +72,17 @@ const LabManagement = () => {
     setLabs([...labs, newLab]);
     setFormData(defaultFormData);
     setIsModalOpen(false);
+    showToast.success('Laboratory partner added successfully.');
   };
 
-  const handleDeleteLab = (id) => {
-    if (window.confirm('Are you sure you want to remove this laboratory partner?')) {
-      setLabs(labs.filter(lab => lab.id !== id));
-    }
+  const handleDeleteLab = (lab) => {
+    setDeleteConfirm({ isOpen: true, labId: lab.id, labName: lab.name });
+  };
+
+  const executeDeleteLab = () => {
+    setLabs(labs.filter(lab => lab.id !== deleteConfirm.labId));
+    showToast.success('Laboratory partner removed.');
+    setDeleteConfirm({ isOpen: false, labId: null, labName: '' });
   };
 
   const handleCreateSpecialization = async (e) => {
@@ -97,7 +106,7 @@ const LabManagement = () => {
       setNewSpecName('');
     } catch (err) {
       console.error(err);
-      alert(err.response?.data?.message || 'Error creating specialization');
+      showToast.error(err.response?.data?.message || 'Error creating specialization.');
     } finally {
       setIsSavingSpec(false);
     }
@@ -182,7 +191,7 @@ const LabManagement = () => {
                       <div className="flex items-center justify-end gap-3">
                         <Badge variant={lab.status === 'Active' ? 'success' : 'danger'}>{lab.status}</Badge>
                         <button 
-                          onClick={() => handleDeleteLab(lab.id)}
+                          onClick={() => handleDeleteLab(lab)}
                           className="text-slate-400 hover:text-red-600 hover:bg-red-50 p-1.5 rounded-lg transition-colors"
                           title="Remove Partner"
                         >
@@ -197,6 +206,17 @@ const LabManagement = () => {
           </table>
         </div>
       </Card>
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmModal
+        isOpen={deleteConfirm.isOpen}
+        onClose={() => setDeleteConfirm({ isOpen: false, labId: null, labName: '' })}
+        onConfirm={executeDeleteLab}
+        title="Remove Laboratory Partner"
+        description={`Are you sure you want to remove "${deleteConfirm.labName}"?`}
+        confirmText="Remove"
+        isLoading={isDeleting}
+      />
 
       {/* Add Laboratory Partner Modal */}
       <Modal isOpen={isModalOpen} onClose={() => { setIsModalOpen(false); setFormData(defaultFormData); }} title="Add Laboratory Partner" maxWidth="max-w-md">

@@ -3,6 +3,7 @@ import { InventoryContext } from '../../../context/InventoryContext';
 import { Card } from '../../../components/ui/Card';
 import { Button } from '../../../components/ui/Button';
 import { BellRing, CalendarClock, DollarSign, Send, ShieldAlert } from 'lucide-react';
+import { showToast } from '../../../utils/toast';
 
 const DuePayments = () => {
   const { payments, suppliers } = useContext(InventoryContext);
@@ -37,7 +38,7 @@ const DuePayments = () => {
   };
 
   const handleReminder = (invoiceNum) => {
-    alert(`Payment reminder notification sent successfully to supplier for Invoice #${invoiceNum}!`);
+    showToast.success(`Payment reminder notification sent successfully to supplier for Invoice #${invoiceNum}!`);
   };
 
   const displayList = getFilteredPayments();

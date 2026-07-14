@@ -5,6 +5,7 @@ import { PatientSelector } from '../../../components/ui/PatientSelector';
 import { Button } from '../../../components/ui/Button';
 import { Input } from '../../../components/ui/Input';
 import { Plus, HelpCircle, FileText, UploadCloud } from 'lucide-react';
+import { showToast } from '../../../utils/toast';
 
 const Documents = () => {
   const [selectedPatient, setSelectedPatient] = useState(null);
@@ -40,9 +41,10 @@ const Documents = () => {
       setSelectedPatient(res.data);
       setDocName('');
       setDocType('X-Ray');
+      showToast.success('Document logged successfully.');
     } catch (err) {
       console.error('Failed to log document:', err);
-      alert('Failed to log document');
+      showToast.error('Failed to log document.');
     } finally {
       setSubmitting(false);
     }

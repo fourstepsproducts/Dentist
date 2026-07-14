@@ -5,6 +5,7 @@ import { Input } from '../../../components/ui/Input';
 import { Select } from '../../../components/ui/Select';
 import { Card } from '../../../components/ui/Card';
 import { Plus, Search, FileText, Trash, ShoppingBag, DollarSign } from 'lucide-react';
+import { showToast } from '../../../utils/toast';
 
 const PurchaseOrders = () => {
   const { purchaseOrders, addPurchaseOrder, suppliers, items, settings } = useContext(InventoryContext);
@@ -62,7 +63,7 @@ const PurchaseOrders = () => {
   const handleSubmit = (e) => {
     e.preventDefault();
     if (selectedItems.some(i => !i.itemId || i.quantity <= 0)) {
-      alert('Please fill out all selected items and positive quantities.');
+      showToast.warning('Please fill out all selected items and positive quantities.');
       return;
     }
 
@@ -81,7 +82,7 @@ const PurchaseOrders = () => {
     setSupplierId('');
     setExpectedDelivery('');
     setSelectedItems([{ itemId: '', quantity: 1, costPrice: 0 }]);
-    alert('Purchase Order created successfully.');
+    showToast.success('Purchase Order created successfully.');
   };
 
   // Compute PO subtotals

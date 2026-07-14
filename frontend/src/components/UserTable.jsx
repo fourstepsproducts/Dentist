@@ -51,7 +51,7 @@ const UserTable = ({ users, onEdit, onDelete }) => {
                   <Button variant="ghost" size="icon" onClick={() => onEdit(user)} className="text-textSecondary hover:text-primary">
                     <Edit2 size={16} />
                   </Button>
-                  <Button variant="ghost" size="icon" onClick={() => onDelete(user._id)} className="text-textSecondary hover:text-danger hover:bg-danger/10">
+                  <Button variant="ghost" size="icon" onClick={() => onDelete(user)} className="text-textSecondary hover:text-danger hover:bg-danger/10">
                     <Trash2 size={16} />
                   </Button>
                 </td>

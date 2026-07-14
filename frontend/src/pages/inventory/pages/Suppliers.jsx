@@ -5,6 +5,8 @@ import { Input } from '../../../components/ui/Input';
 import { Select } from '../../../components/ui/Select';
 import { Card } from '../../../components/ui/Card';
 import { Plus, Search, Edit, Trash2, Mail, Phone, Landmark } from 'lucide-react';
+import ConfirmModal from '../../../components/ui/ConfirmModal';
+import { showToast } from '../../../utils/toast';
 
 const Suppliers = () => {
   const { suppliers, addSupplier, updateSupplier, deleteSupplier } = useContext(InventoryContext);
@@ -12,6 +14,7 @@ const Suppliers = () => {
   const [search, setSearch] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingSupplier, setEditingSupplier] = useState(null);
+  const [deleteConfirm, setDeleteConfirm] = useState({ isOpen: false, supplierId: null });
 
   const [form, setForm] = useState({
     name: '', company: '', contactPerson: '', phone: '', email: '',
@@ -55,9 +58,15 @@ const Suppliers = () => {
   };
 
   const handleDelete = (id) => {
-    if (window.confirm('Delete this supplier record? All pending invoice tracking links will remain active.')) {
-      deleteSupplier(id);
+    setDeleteConfirm({ isOpen: true, supplierId: id });
+  };
+
+  const executeDelete = () => {
+    if (deleteConfirm.supplierId) {
+      deleteSupplier(deleteConfirm.supplierId);
+      showToast.success('Supplier deleted successfully.');
     }
+    setDeleteConfirm({ isOpen: false, supplierId: null });
   };
 
   const filtered = suppliers.filter(s => 
@@ -296,6 +305,16 @@ const Suppliers = () => {
           </Card>
         </div>
       )}
+
+      {/* Delete Confirmation */}
+      <ConfirmModal
+        isOpen={deleteConfirm.isOpen}
+        onClose={() => setDeleteConfirm({ isOpen: false, supplierId: null })}
+        onConfirm={executeDelete}
+        title="Delete Supplier"
+        description="Delete this supplier record? All pending invoice tracking links will remain active."
+        confirmText="Delete Supplier"
+      />
     </div>
   );
 };

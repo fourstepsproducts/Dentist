@@ -8,6 +8,8 @@ import {
   Beaker, Plus, Mail, Phone, Edit, Trash2, 
   Layers, ClipboardList, TrendingDown 
 } from 'lucide-react';
+import ConfirmModal from '../../../components/ui/ConfirmModal';
+import { showToast } from '../../../utils/toast';
 
 const LabManagement = () => {
   const { 
@@ -17,6 +19,7 @@ const LabManagement = () => {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingLab, setEditingLab] = useState(null);
+  const [deleteConfirm, setDeleteConfirm] = useState({ isOpen: false, labId: null });
 
   // Tab views for laboratory details
   const [selectedLabId, setSelectedLabId] = useState(1);
@@ -51,9 +54,15 @@ const LabManagement = () => {
   };
 
   const handleDelete = (id) => {
-    if (window.confirm('Delete this laboratory? All assigned configuration records will be detached.')) {
-      deleteLab(id);
+    setDeleteConfirm({ isOpen: true, labId: id });
+  };
+
+  const executeDelete = () => {
+    if (deleteConfirm.labId) {
+      deleteLab(deleteConfirm.labId);
+      showToast.success('Laboratory deleted successfully.');
     }
+    setDeleteConfirm({ isOpen: false, labId: null });
   };
 
   // Computations for details panel
@@ -355,6 +364,16 @@ const LabManagement = () => {
           </Card>
         </div>
       )}
+
+      {/* Delete Confirmation */}
+      <ConfirmModal
+        isOpen={deleteConfirm.isOpen}
+        onClose={() => setDeleteConfirm({ isOpen: false, labId: null })}
+        onConfirm={executeDelete}
+        title="Delete Laboratory"
+        description="Delete this laboratory? All assigned configuration records will be detached."
+        confirmText="Delete Laboratory"
+      />
     </div>
   );
 };

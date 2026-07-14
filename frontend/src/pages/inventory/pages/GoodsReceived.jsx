@@ -5,6 +5,7 @@ import { Input } from '../../../components/ui/Input';
 import { Select } from '../../../components/ui/Select';
 import { Card } from '../../../components/ui/Card';
 import { Plus, Search, ShieldCheck, CheckCircle2, Clipboard } from 'lucide-react';
+import { showToast } from '../../../utils/toast';
 
 const GoodsReceived = () => {
   const { goodsReceived, receiveGoods, purchaseOrders, suppliers, items } = useContext(InventoryContext);
@@ -55,7 +56,7 @@ const GoodsReceived = () => {
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!selectedPoNumber) {
-      alert('Please select a purchase order.');
+      showToast.warning('Please select a purchase order.');
       return;
     }
 
@@ -80,7 +81,7 @@ const GoodsReceived = () => {
     setReceivedBy('');
     setGrnRemarks('');
     setReceiptItems([]);
-    alert('Goods Received Note (GRN) generated. Stock quantities updated.');
+    showToast.success('Goods Received Note (GRN) generated. Stock quantities updated.');
   };
 
   const filtered = goodsReceived.filter(g => {

@@ -5,7 +5,7 @@ import { Input } from '../../../components/ui/Input';
 import { Select } from '../../../components/ui/Select';
 import { Card } from '../../../components/ui/Card';
 import { Plus, Search, Edit, Trash2, Mail, Phone, Landmark } from 'lucide-react';
-import ConfirmModal from '../../../components/ui/ConfirmModal';
+import { ConfirmModal } from '../../../components/ui/ConfirmModal';
 import { showToast } from '../../../utils/toast';
 
 const Suppliers = () => {

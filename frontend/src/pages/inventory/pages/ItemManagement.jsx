@@ -8,7 +8,7 @@ import {
   Plus, Search, Edit, Trash2, Download, Upload, 
   Barcode, CheckCircle, XCircle 
 } from 'lucide-react';
-import ConfirmModal from '../../../components/ui/ConfirmModal';
+import { ConfirmModal } from '../../../components/ui/ConfirmModal';
 import { showToast } from '../../../utils/toast';
 
 const ItemManagement = () => {

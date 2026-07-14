@@ -8,7 +8,7 @@ import {
   Beaker, Plus, Mail, Phone, Edit, Trash2, 
   Layers, ClipboardList, TrendingDown 
 } from 'lucide-react';
-import ConfirmModal from '../../../components/ui/ConfirmModal';
+import { ConfirmModal } from '../../../components/ui/ConfirmModal';
 import { showToast } from '../../../utils/toast';
 
 const LabManagement = () => {

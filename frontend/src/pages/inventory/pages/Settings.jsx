@@ -8,7 +8,7 @@ import {
   Settings as SettingsIcon, Tag, Ruler, Scale, 
   FileText, Shield, HardDrive, BellRing 
 } from 'lucide-react';
-import ConfirmModal from '../../../components/ui/ConfirmModal';
+import { ConfirmModal } from '../../../components/ui/ConfirmModal';
 import { showToast } from '../../../utils/toast';
 
 const Settings = () => {

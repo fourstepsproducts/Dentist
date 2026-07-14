@@ -1,32 +1,37 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Plus, Search, Filter, MoreVertical, Edit2, Trash2, Eye, EyeOff, Star } from 'lucide-react';
+import { Plus, Search, Filter, Edit2, Trash2, Eye, EyeOff } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Badge } from '../../components/ui/Badge';
 import { Select } from '../../components/ui/Select';
+import { SearchableSelect } from '../../components/ui/SearchableSelect';
 import { Modal } from '../../components/ui/Modal';
 import { Card } from '../../components/ui/Card';
 
 const DoctorManagement = () => {
   const [doctorsList, setDoctorsList] = useState([]);
+  const [roles, setRoles] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isNewRoleModalOpen, setIsNewRoleModalOpen] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  const [newRoleData, setNewRoleData] = useState({ name: '', description: '' });
+  const [isSavingRole, setIsSavingRole] = useState(false);
 
   const defaultFormData = {
     name: '',
     email: '',
     phone: '',
     employeeId: '',
-    specialization: 'Orthodontics',
+    role: '',
     qualification: '',
     experience: '',
-    consultationFee: '',
     password: '',
     confirmPassword: ''
   };
@@ -38,7 +43,7 @@ const DoctorManagement = () => {
       setIsLoading(true);
       setError(null);
       const token = localStorage.getItem('token');
-      const res = await axios.get('http://localhost:5000/api/admin/doctors', {
+      const res = await axios.get('/api/admin/doctors', {
         headers: { Authorization: `Bearer ${token}` }
       });
       setDoctorsList(res.data);
@@ -50,8 +55,21 @@ const DoctorManagement = () => {
     }
   };
 
+  const fetchRoles = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await axios.get('/api/roles', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setRoles(res.data);
+    } catch (err) {
+      console.error('Failed to fetch roles', err);
+    }
+  };
+
   useEffect(() => {
     fetchDoctors();
+    fetchRoles();
   }, []);
 
   const handleChange = (e) => {
@@ -73,10 +91,9 @@ const DoctorManagement = () => {
       email: doc.email,
       phone: doc.phone || '',
       employeeId: doc.employeeId || '',
-      specialization: doc.specialization || 'Orthodontics',
+      role: doc.role || '',
       qualification: doc.qualification || '',
       experience: doc.experience || '',
-      consultationFee: doc.consultationFee || '',
       password: '',
       confirmPassword: ''
     });
@@ -101,10 +118,10 @@ const DoctorManagement = () => {
         email: formData.email,
         phone: formData.phone,
         employeeId: formData.employeeId,
-        specialization: formData.specialization,
+        role: formData.role,
+        specialization: formData.role, // For external doctors, the role is their specialization
         qualification: formData.qualification,
         experience: formData.experience,
-        consultationFee: formData.consultationFee,
         status: 'Active',
       };
       
@@ -113,9 +130,9 @@ const DoctorManagement = () => {
       }
 
       if (editingId) {
-        await axios.put(`http://localhost:5000/api/admin/doctors/${editingId}`, payload, config);
+        await axios.put(`/api/admin/doctors/${editingId}`, payload, config);
       } else {
-        await axios.post('http://localhost:5000/api/admin/doctors', payload, config);
+        await axios.post('/api/admin/doctors', payload, config);
       }
       
       closeModal();
@@ -131,7 +148,7 @@ const DoctorManagement = () => {
     
     try {
       const token = localStorage.getItem('token');
-      await axios.delete(`http://localhost:5000/api/admin/doctors/${id}`, {
+      await axios.delete(`/api/admin/doctors/${id}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       fetchDoctors();
@@ -163,7 +180,7 @@ const DoctorManagement = () => {
           <div className="flex items-center gap-3 w-full sm:w-auto">
             <Select 
               className="w-[160px]" 
-              options={[{label: 'All Specialties', value: 'all'}, {label: 'Orthodontics', value: 'Orthodontics'}, {label: 'Pediatrics', value: 'Pediatrics'}, {label: 'Oral Surgery', value: 'Oral Surgery'}]} 
+              options={[{label: 'All Specialties', value: 'all'}, ...roles.map(r => ({label: r.name, value: r.name}))]} 
             />
           </div>
         </div>
@@ -198,7 +215,7 @@ const DoctorManagement = () => {
                       </div>
                       <div>
                         <h3 className="font-bold text-slate-900">{doc.name}</h3>
-                        <p className="text-xs text-blue-600 font-medium">{doc.specialization || 'General'}</p>
+                        <p className="text-xs text-blue-600 font-medium">{doc.role || doc.specialization || 'General'}</p>
                       </div>
                     </div>
                   </div>
@@ -212,10 +229,7 @@ const DoctorManagement = () => {
                       <span className="text-slate-500">Experience</span>
                       <span className="font-semibold text-slate-900">{doc.experience ? `${doc.experience} Years` : '-'}</span>
                     </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-slate-500">Consultation Fee</span>
-                      <span className="font-semibold text-slate-900">{doc.consultationFee ? `$${doc.consultationFee}` : '-'}</span>
-                    </div>
+
                     <div className="flex justify-between text-sm">
                       <span className="text-slate-500">Status</span>
                       <Badge variant={doc.isActive ? 'success' : 'warning'}>{doc.isActive ? 'Active' : 'Inactive'}</Badge>
@@ -228,6 +242,7 @@ const DoctorManagement = () => {
         </div>
       </Card>
 
+      {/* Main Doctor Form Modal */}
       <Modal isOpen={isModalOpen} onClose={closeModal} title={editingId ? "Edit Doctor" : "Add New Doctor"} maxWidth="max-w-2xl">
         <form className="space-y-6" onSubmit={handleSaveDoctor}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -262,13 +277,16 @@ const DoctorManagement = () => {
               />
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-700">Specialization</label>
-              <Select 
-                name="specialization"
-                value={formData.specialization}
-                onChange={handleChange}
-                options={[{label: 'Orthodontics', value: 'Orthodontics'}, {label: 'Pediatrics', value: 'Pediatrics'}, {label: 'Oral Surgery', value: 'Oral Surgery'}, {label: 'General Dentistry', value: 'General Dentistry'}]} 
+              <label className="text-sm font-medium text-slate-700">Specialty / Role</label>
+              <SearchableSelect
+                value={formData.role}
+                onChange={(val) => setFormData(prev => ({ ...prev, role: val }))}
+                placeholder="Select Specialty"
+                searchPlaceholder="Search specialties..."
+                options={roles.map(r => ({ label: r.name, value: r.name }))}
+                onCreateNew={() => setIsNewRoleModalOpen(true)}
               />
+              {!formData.role && <input type="text" required className="hidden" />}
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium text-slate-700">Qualification</label>
@@ -289,16 +307,7 @@ const DoctorManagement = () => {
                 placeholder="5" 
               />
             </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-700">Consultation Fee ($)</label>
-              <Input 
-                type="number"
-                name="consultationFee"
-                value={formData.consultationFee}
-                onChange={handleChange}
-                placeholder="150" 
-              />
-            </div>
+
             <div className="space-y-2">
               <label className="text-sm font-medium text-slate-700">
                 {editingId ? "New Password (Optional)" : "Password"}
@@ -347,6 +356,81 @@ const DoctorManagement = () => {
           <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
             <Button variant="ghost" onClick={(e) => { e.preventDefault(); closeModal(); }}>Cancel</Button>
             <Button type="submit">Save Doctor Profile</Button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Dynamic "+ Create New Role" Sub-Modal */}
+      <Modal 
+        isOpen={isNewRoleModalOpen} 
+        onClose={() => {
+          setIsNewRoleModalOpen(false);
+          setNewRoleData({ name: '', description: '' });
+        }} 
+        title="Create New Role" 
+        maxWidth="max-w-sm"
+      >
+        <form 
+          className="space-y-4" 
+          onSubmit={async (e) => {
+            e.preventDefault();
+            if (!newRoleData.name) return;
+            try {
+              setIsSavingRole(true);
+              const token = localStorage.getItem('token');
+              const res = await axios.post('/api/roles', newRoleData, {
+                headers: { Authorization: `Bearer ${token}` }
+              });
+              // Refresh roles
+              await fetchRoles();
+              // Select the newly created role
+              setFormData(prev => ({ ...prev, role: res.data.name }));
+              // Close sub-modal
+              setIsNewRoleModalOpen(false);
+              setNewRoleData({ name: '', description: '' });
+            } catch (err) {
+              console.error(err);
+              alert(err.response?.data?.message || 'Error creating role');
+            } finally {
+              setIsSavingRole(false);
+            }
+          }}
+        >
+          <div className="space-y-3">
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-slate-600">Role Name</label>
+              <Input
+                name="name"
+                value={newRoleData.name}
+                onChange={(e) => setNewRoleData(prev => ({ ...prev, name: e.target.value }))}
+                placeholder="e.g. Cardiologist"
+                required
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-slate-600">Description (Optional)</label>
+              <Input
+                name="description"
+                value={newRoleData.description}
+                onChange={(e) => setNewRoleData(prev => ({ ...prev, description: e.target.value }))}
+                placeholder="Brief role description..."
+              />
+            </div>
+          </div>
+          <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+            <Button 
+              variant="ghost" 
+              onClick={(e) => {
+                e.preventDefault();
+                setIsNewRoleModalOpen(false);
+                setNewRoleData({ name: '', description: '' });
+              }}
+            >
+              Cancel
+            </Button>
+            <Button type="submit" disabled={isSavingRole}>
+              {isSavingRole ? 'Saving...' : 'Save Role'}
+            </Button>
           </div>
         </form>
       </Modal>

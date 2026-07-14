@@ -19,7 +19,7 @@ const Modal = ({ isOpen, onClose, title, children, maxWidth = 'max-w-2xl' }) => 
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
             transition={{ type: "spring", duration: 0.5 }}
-            className={`relative bg-white rounded-2xl shadow-2xl w-full ${maxWidth} max-h-[90vh] flex flex-col overflow-hidden`}
+            className={`relative bg-white rounded-2xl shadow-2xl w-full ${maxWidth} max-h-[90vh] flex flex-col`}
           >
             <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-white z-10">
               <h2 className="text-xl font-bold text-slate-900 tracking-tight">{title}</h2>
@@ -30,7 +30,7 @@ const Modal = ({ isOpen, onClose, title, children, maxWidth = 'max-w-2xl' }) => 
                 <X size={20} strokeWidth={2.5} />
               </button>
             </div>
-            <div className="p-6 overflow-y-auto bg-slate-50/30">
+            <div className="p-6 overflow-x-hidden overflow-y-auto bg-slate-50/30">
               {children}
             </div>
           </motion.div>

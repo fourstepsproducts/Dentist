@@ -9,7 +9,7 @@ const { generateEmployeeId } = require('../utils/generateEmployeeId');
 // @access  Private/Admin
 const getStaff = async (req, res) => {
   try {
-    const staff = await User.find({ role: { $nin: ['doctor', 'Doctor', 'admin'] } }).sort({ createdAt: -1 }).select('-password');
+    const staff = await User.find({ role: { $ne: 'admin' }, isExternalDoctor: { $ne: true } }).sort({ createdAt: -1 }).select('-password');
     res.json(staff);
   } catch (error) {
     res.status(500).json({ message: 'Server Error' });
@@ -21,14 +21,10 @@ const getStaff = async (req, res) => {
 // @access  Private/Admin
 const createStaff = async (req, res) => {
   try {
-    const { name, email, password, role, phone, department, status } = req.body;
+    const { name, email, password, role, phone, department, status, monthlySalary } = req.body;
 
-    if (!name || !email || !password || !role) {
-      return res.status(400).json({ message: 'Please add all required fields' });
-    }
-    
-    if (role === 'doctor') {
-      return res.status(400).json({ message: 'Cannot create doctor in Staff Management' });
+    if (!name || !email || !password || !role || monthlySalary === undefined) {
+      return res.status(400).json({ message: 'Please add all required fields including Monthly Salary' });
     }
 
     const userExists = await User.findOne({ email });
@@ -56,6 +52,8 @@ const createStaff = async (req, res) => {
           status: status || 'Active',
           employeeId: finalEmployeeId,
           isActive: status === 'Active' ? true : false,
+          isExternalDoctor: false,
+          monthlySalary: Number(monthlySalary)
         });
         break; // Break on success
       } catch (err) {
@@ -75,6 +73,7 @@ const createStaff = async (req, res) => {
         email: user.email,
         role: user.role,
         status: user.status,
+        monthlySalary: user.monthlySalary
       });
     } else {
       res.status(400).json({ message: 'Invalid user data' });
@@ -94,16 +93,8 @@ const updateStaff = async (req, res) => {
     if (!user) {
       return res.status(404).json({ message: 'Staff not found' });
     }
-    
-    if (user.role.toLowerCase() === 'doctor') {
-      return res.status(400).json({ message: 'Cannot edit a doctor from Staff Management' });
-    }
 
-    const { name, email, password, role, phone, department, status } = req.body;
-    
-    if (role.toLowerCase() === 'doctor') {
-      return res.status(400).json({ message: 'Cannot change role to doctor' });
-    }
+    const { name, email, password, role, phone, department, status, monthlySalary } = req.body;
     
     // Check email uniqueness if email changed
     if (email && email !== user.email) {
@@ -118,7 +109,8 @@ const updateStaff = async (req, res) => {
       isActive: status === 'Active' ? true : false,
       phone,
       department,
-      status
+      status,
+      monthlySalary: monthlySalary !== undefined ? Number(monthlySalary) : undefined
     };
 
     Object.keys(updatedData).forEach(key => updatedData[key] === undefined && delete updatedData[key]);
@@ -150,10 +142,6 @@ const deleteStaff = async (req, res) => {
     if (!user) {
       return res.status(404).json({ message: 'Staff not found' });
     }
-    
-    if (user.role.toLowerCase() === 'doctor') {
-       return res.status(400).json({ message: 'Cannot delete doctor from Staff Management' });
-    }
 
     await user.deleteOne();
     res.json({ id: req.params.id, message: 'Staff removed' });
@@ -170,7 +158,7 @@ const deleteStaff = async (req, res) => {
 // @access  Private/Admin
 const getDoctors = async (req, res) => {
   try {
-    const doctors = await User.find({ role: { $in: ['doctor', 'Doctor'] } }).sort({ createdAt: -1 }).select('-password');
+    const doctors = await User.find({ isExternalDoctor: true }).sort({ createdAt: -1 }).select('-password');
     res.json(doctors);
   } catch (error) {
     res.status(500).json({ message: 'Server Error' });
@@ -182,10 +170,10 @@ const getDoctors = async (req, res) => {
 // @access  Private/Admin
 const createDoctor = async (req, res) => {
   try {
-    const { name, email, password, phone, specialization, qualification, experience, consultationFee, status } = req.body;
+    const { name, email, password, role, phone, specialization, qualification, experience, consultationFee, status } = req.body;
 
-    if (!name || !email || !password) {
-      return res.status(400).json({ message: 'Please add all required fields' });
+    if (!name || !email || !password || !role) {
+      return res.status(400).json({ message: 'Please add all required fields including Specialist Role' });
     }
 
     const userExists = await User.findOne({ email });
@@ -202,18 +190,19 @@ const createDoctor = async (req, res) => {
 
     while (retries > 0) {
       try {
-        finalEmployeeId = await generateEmployeeId('doctor');
+        finalEmployeeId = await generateEmployeeId(role);
         user = await User.create({
           name,
           email,
           password: hashedPassword,
-          role: 'doctor', // Hardcoded role
+          role,
           department: 'Clinical', // Auto assigned
           phone: phone || '-',
           status: status || 'Active',
           employeeId: finalEmployeeId,
           isActive: status === 'Active' ? true : false,
-          specialization,
+          isExternalDoctor: true,
+          specialization: specialization || role,
           qualification,
           experience,
           consultationFee
@@ -255,12 +244,8 @@ const updateDoctor = async (req, res) => {
     if (!user) {
       return res.status(404).json({ message: 'Doctor not found' });
     }
-    
-    if (user.role.toLowerCase() !== 'doctor') {
-      return res.status(400).json({ message: 'User is not a doctor' });
-    }
 
-    const { name, email, password, phone, specialization, qualification, experience, consultationFee, status } = req.body;
+    const { name, email, password, role, phone, specialization, qualification, experience, consultationFee, status } = req.body;
     
     // Check email uniqueness if email changed
     if (email && email !== user.email) {
@@ -271,6 +256,7 @@ const updateDoctor = async (req, res) => {
     let updatedData = { 
       name, 
       email, 
+      role,
       isActive: status === 'Active' ? true : false,
       phone,
       status,
@@ -309,10 +295,6 @@ const deleteDoctor = async (req, res) => {
     if (!user) {
       return res.status(404).json({ message: 'Doctor not found' });
     }
-    
-    if (user.role.toLowerCase() !== 'doctor') {
-       return res.status(400).json({ message: 'Cannot delete non-doctor from Doctor Management' });
-    }
 
     await user.deleteOne();
     res.json({ id: req.params.id, message: 'Doctor removed' });
@@ -329,8 +311,8 @@ const deleteDoctor = async (req, res) => {
 // @access  Private/Admin
 const getDashboardCounts = async (req, res) => {
   try {
-    const totalDoctors = await User.countDocuments({ role: { $in: ['doctor', 'Doctor'] } });
-    const totalStaff = await User.countDocuments({ role: { $nin: ['doctor', 'Doctor', 'admin'] } });
+    const totalDoctors = await User.countDocuments({ isExternalDoctor: true });
+    const totalStaff = await User.countDocuments({ role: { $ne: 'admin' }, isExternalDoctor: { $ne: true } });
     
     res.json({
       totalDoctors,

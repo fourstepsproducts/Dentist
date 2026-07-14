@@ -15,7 +15,7 @@ const InventoryUsers = () => {
   const fetchUsers = async () => {
     try {
       const token = localStorage.getItem('token');
-      const res = await axios.get('http://localhost:5000/api/users/inventory', {
+      const res = await axios.get('/api/users/inventory', {
         headers: { Authorization: `Bearer ${token}` }
       });
       setUsers(res.data);
@@ -34,9 +34,9 @@ const InventoryUsers = () => {
       const config = { headers: { Authorization: `Bearer ${token}` } };
       
       if (editingUser) {
-        await axios.put(`http://localhost:5000/api/users/${editingUser._id}`, formData, config);
+        await axios.put(`/api/users/${editingUser._id}`, formData, config);
       } else {
-        await axios.post('http://localhost:5000/api/users', formData, config);
+        await axios.post('/api/users', formData, config);
       }
       
       setIsModalOpen(false);
@@ -51,7 +51,7 @@ const InventoryUsers = () => {
     if (window.confirm('Are you sure you want to delete this user?')) {
       try {
         const token = localStorage.getItem('token');
-        await axios.delete(`http://localhost:5000/api/users/${id}`, {
+        await axios.delete(`/api/users/${id}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         fetchUsers();

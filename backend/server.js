@@ -3,6 +3,7 @@ const dotenv = require('dotenv');
 const cors = require('cors');
 const connectDB = require('./config/db');
 
+
 dotenv.config();
 
 connectDB();
@@ -18,6 +19,11 @@ app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/users', require('./routes/userRoutes'));
 app.use('/api/admin', require('./routes/adminRoutes'));
 app.use('/api/staff', require('./routes/staffRoutes'));
+app.use('/api/roles', require('./routes/roleRoutes'));
+app.use('/api/specializations', require('./routes/specializationRoutes'));
+app.use('/api/clinic-dashboard', require('./routes/clinicDashboardRoutes'));
+app.use('/api/patients', require('./routes/patientRoutes'));
+app.use('/api/appointments', require('./routes/appointmentRoutes'));
 
 // Basic health check route
 app.get('/', (req, res) => {

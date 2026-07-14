@@ -1,27 +1,34 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Plus, Search, Filter, MoreVertical, Edit2, Trash2, Eye, EyeOff } from 'lucide-react';
+import { Plus, Search, Filter, Edit2, Trash2, Eye, EyeOff, DollarSign } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Badge } from '../../components/ui/Badge';
 import { Select } from '../../components/ui/Select';
+import { SearchableSelect } from '../../components/ui/SearchableSelect';
 import { Modal } from '../../components/ui/Modal';
 import { Card } from '../../components/ui/Card';
 
 const StaffManagement = () => {
   const [staffList, setStaffList] = useState([]);
+  const [roles, setRoles] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isNewRoleModalOpen, setIsNewRoleModalOpen] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
+  const [newRoleData, setNewRoleData] = useState({ name: '', description: '' });
+  const [isSavingRole, setIsSavingRole] = useState(false);
+
   const defaultFormData = {
     name: '',
     email: '',
-    role: 'Receptionist',
+    role: '',
+    monthlySalary: '',
     password: '',
     confirmPassword: ''
   };
@@ -33,7 +40,7 @@ const StaffManagement = () => {
       setIsLoading(true);
       setError(null);
       const token = localStorage.getItem('token');
-      const res = await axios.get('http://localhost:5000/api/admin/staff', {
+      const res = await axios.get('/api/admin/staff', {
         headers: { Authorization: `Bearer ${token}` }
       });
       setStaffList(res.data);
@@ -45,8 +52,21 @@ const StaffManagement = () => {
     }
   };
 
+  const fetchRoles = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await axios.get('/api/roles', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setRoles(res.data);
+    } catch (err) {
+      console.error('Failed to fetch roles', err);
+    }
+  };
+
   useEffect(() => {
     fetchStaff();
+    fetchRoles();
   }, []);
 
   const handleChange = (e) => {
@@ -66,7 +86,8 @@ const StaffManagement = () => {
     setFormData({
       name: staff.name,
       email: staff.email,
-      role: staff.role.toLowerCase(),
+      role: staff.role,
+      monthlySalary: staff.monthlySalary || '',
       password: '',
       confirmPassword: ''
     });
@@ -92,6 +113,7 @@ const StaffManagement = () => {
         role: formData.role,
         department: 'Administration',
         status: 'Active',
+        monthlySalary: Number(formData.monthlySalary)
       };
       
       if (formData.password) {
@@ -99,9 +121,9 @@ const StaffManagement = () => {
       }
 
       if (editingId) {
-        await axios.put(`http://localhost:5000/api/admin/staff/${editingId}`, payload, config);
+        await axios.put(`/api/admin/staff/${editingId}`, payload, config);
       } else {
-        await axios.post('http://localhost:5000/api/admin/staff', payload, config);
+        await axios.post('/api/admin/staff', payload, config);
       }
       
       closeModal();
@@ -117,7 +139,7 @@ const StaffManagement = () => {
     
     try {
       const token = localStorage.getItem('token');
-      await axios.delete(`http://localhost:5000/api/admin/staff/${id}`, {
+      await axios.delete(`/api/admin/staff/${id}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       fetchStaff();
@@ -149,7 +171,7 @@ const StaffManagement = () => {
           <div className="flex items-center gap-3 w-full sm:w-auto">
             <Select 
               className="w-[140px]" 
-              options={[{label: 'All Roles', value: 'all'}, {label: 'Nurse', value: 'nurse'}, {label: 'Receptionist', value: 'receptionist'}]} 
+              options={[{label: 'All Roles', value: 'all'}, ...roles.map(r => ({label: r.name, value: r.name}))]} 
             />
             <Select 
               className="w-[140px]" 
@@ -207,6 +229,14 @@ const StaffManagement = () => {
                       <span className="text-slate-500">Department</span>
                       <span className="font-semibold text-slate-900">{staff.department || 'Administration'}</span>
                     </div>
+                    {staff.monthlySalary !== undefined && (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-slate-500">Monthly Salary</span>
+                        <span className="font-semibold text-emerald-600">
+                          {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(staff.monthlySalary)}
+                        </span>
+                      </div>
+                    )}
                     <div className="flex justify-between text-sm">
                       <span className="text-slate-500">Status</span>
                       <Badge variant={(staff.status || (staff.isActive ? 'Active' : 'Inactive')) === 'Active' ? 'success' : 'warning'}>
@@ -221,6 +251,7 @@ const StaffManagement = () => {
         </div>
       </Card>
 
+      {/* Main Staff Form Modal */}
       <Modal isOpen={isModalOpen} onClose={closeModal} title={editingId ? "Edit Staff" : "Add New Staff"} maxWidth="max-w-md">
         <form className="space-y-6" onSubmit={handleSaveStaff}>
           <div className="flex flex-col space-y-4">
@@ -247,20 +278,27 @@ const StaffManagement = () => {
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium text-slate-700">Role</label>
-              <Select 
-                name="role"
+              <SearchableSelect
                 value={formData.role}
+                onChange={(val) => setFormData(prev => ({ ...prev, role: val }))}
+                placeholder="Select Role"
+                searchPlaceholder="Search roles..."
+                options={roles.map(r => ({ label: r.name, value: r.name }))}
+                onCreateNew={() => setIsNewRoleModalOpen(true)}
+              />
+              {!formData.role && <input type="text" required className="hidden" />}
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-slate-700">Monthly Salary</label>
+              <Input 
+                type="number"
+                name="monthlySalary"
+                value={formData.monthlySalary}
                 onChange={handleChange}
-                options={[
-                  {label: 'Receptionist', value: 'Receptionist'}, 
-                  {label: 'Nurse', value: 'Nurse'},
-                  {label: 'Lab Staff', value: 'Lab Staff'},
-                  {label: 'Accountant', value: 'Accountant'},
-                  {label: 'Pharmacist', value: 'Pharmacist'},
-                  {label: 'Admin Staff', value: 'Admin Staff'},
-                  {label: 'Cleaner', value: 'Cleaner'},
-                  {label: 'Security', value: 'Security'}
-                ]} 
+                placeholder="5000"
+                icon={DollarSign}
+                min="0"
+                required
               />
             </div>
             <div className="space-y-2">
@@ -312,6 +350,81 @@ const StaffManagement = () => {
           <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
             <Button variant="ghost" onClick={(e) => { e.preventDefault(); closeModal(); }}>Cancel</Button>
             <Button type="submit">Save Staff Member</Button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Dynamic "+ Create New Role" Sub-Modal */}
+      <Modal 
+        isOpen={isNewRoleModalOpen} 
+        onClose={() => {
+          setIsNewRoleModalOpen(false);
+          setNewRoleData({ name: '', description: '' });
+        }} 
+        title="Create New Role" 
+        maxWidth="max-w-sm"
+      >
+        <form 
+          className="space-y-4" 
+          onSubmit={async (e) => {
+            e.preventDefault();
+            if (!newRoleData.name) return;
+            try {
+              setIsSavingRole(true);
+              const token = localStorage.getItem('token');
+              const res = await axios.post('/api/roles', newRoleData, {
+                headers: { Authorization: `Bearer ${token}` }
+              });
+              // Refresh roles
+              await fetchRoles();
+              // Select the newly created role
+              setFormData(prev => ({ ...prev, role: res.data.name }));
+              // Close sub-modal
+              setIsNewRoleModalOpen(false);
+              setNewRoleData({ name: '', description: '' });
+            } catch (err) {
+              console.error(err);
+              alert(err.response?.data?.message || 'Error creating role');
+            } finally {
+              setIsSavingRole(false);
+            }
+          }}
+        >
+          <div className="space-y-3">
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-slate-600">Role Name</label>
+              <Input
+                name="name"
+                value={newRoleData.name}
+                onChange={(e) => setNewRoleData(prev => ({ ...prev, name: e.target.value }))}
+                placeholder="e.g. Accountant"
+                required
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-slate-600">Description (Optional)</label>
+              <Input
+                name="description"
+                value={newRoleData.description}
+                onChange={(e) => setNewRoleData(prev => ({ ...prev, description: e.target.value }))}
+                placeholder="Brief role description..."
+              />
+            </div>
+          </div>
+          <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+            <Button 
+              variant="ghost" 
+              onClick={(e) => {
+                e.preventDefault();
+                setIsNewRoleModalOpen(false);
+                setNewRoleData({ name: '', description: '' });
+              }}
+            >
+              Cancel
+            </Button>
+            <Button type="submit" disabled={isSavingRole}>
+              {isSavingRole ? 'Saving...' : 'Save Role'}
+            </Button>
           </div>
         </form>
       </Modal>

@@ -52,6 +52,13 @@ const userSchema = new mongoose.Schema(
     consultationFee: {
       type: Number,
     },
+    isExternalDoctor: {
+      type: Boolean,
+      default: false
+    },
+    monthlySalary: {
+      type: Number
+    },
     
     // Additional Personal Info
     gender: { type: String },

@@ -49,7 +49,7 @@ const Profile = () => {
 
   const fetchProfile = async () => {
     try {
-      const { data } = await axios.get('http://localhost:5000/api/staff/profile', {
+      const { data } = await axios.get('/api/staff/profile', {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
       });
       setProfile(data);
@@ -91,7 +91,7 @@ const Profile = () => {
   const handleProfileSubmit = async (e) => {
     e.preventDefault();
     try {
-      const { data } = await axios.put('http://localhost:5000/api/staff/profile', editForm, {
+      const { data } = await axios.put('/api/staff/profile', editForm, {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
       });
       setProfile(data);
@@ -119,7 +119,7 @@ const Profile = () => {
 
     setIsChangingPassword(true);
     try {
-      await axios.put('http://localhost:5000/api/staff/change-password', {
+      await axios.put('/api/staff/change-password', {
         currentPassword: passwordForm.currentPassword,
         newPassword: passwordForm.newPassword
       }, {
@@ -438,6 +438,14 @@ const Profile = () => {
                 <span className="text-slate-500 block mb-1">Employment Type</span>
                 <span className="font-medium text-slate-900">{profile.employmentType || 'Full Time'}</span>
               </div>
+              {profile.monthlySalary !== undefined && (
+                <div>
+                  <span className="text-slate-500 block mb-1">Monthly Salary</span>
+                  <span className="font-semibold text-emerald-600">
+                    {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(profile.monthlySalary)}
+                  </span>
+                </div>
+              )}
             </div>
           </Card>
 

@@ -1,9 +1,39 @@
-import React, { useContext } from 'react';
+import React, { useContext, useState, useEffect } from 'react';
+import axios from 'axios';
+import { Users, Calendar, Clock } from 'lucide-react';
 import { AuthContext } from '../../../context/AuthContext';
 import { Card } from '../../../components/ui/Card';
 
 const DynamicDashboard = () => {
   const { user } = useContext(AuthContext);
+  const [stats, setStats] = useState({
+    totalPatients: 0,
+    todayAppointments: 0,
+    waitingPatients: 0
+  });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        setLoading(true);
+        const token = localStorage.getItem('token');
+        const res = await axios.get('/api/clinic-dashboard/stats', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        setStats(res.data);
+        setError(null);
+      } catch (err) {
+        console.error('Failed to load clinic stats', err);
+        setError(err.response?.data?.message || 'Error loading dashboard statistics.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStats();
+  }, []);
 
   const renderDashboardContent = () => {
     switch (user?.role?.toLowerCase()) {
@@ -110,6 +140,63 @@ const DynamicDashboard = () => {
         <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Dashboard</h1>
         <p className="text-slate-500 text-sm mt-1">Welcome back, {user?.name}. Here's what's happening today.</p>
       </div>
+
+      {/* Summary Cards */}
+      {loading ? (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {[1, 2, 3].map((i) => (
+            <Card key={i} className="p-6 h-28 bg-white flex items-center justify-between animate-pulse">
+              <div className="space-y-3 flex-1">
+                <div className="h-3 bg-slate-200 rounded w-1/2"></div>
+                <div className="h-8 bg-slate-300 rounded w-1/4"></div>
+              </div>
+              <div className="w-12 h-12 bg-slate-200 rounded-lg"></div>
+            </Card>
+          ))}
+        </div>
+      ) : error ? (
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg flex items-center gap-3 text-sm">
+          <span className="font-semibold">Failed to load statistics:</span> {error}
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <Card className="p-6 transition-all hover:shadow-md duration-300">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Total Patients</p>
+                <h3 className="text-3xl font-bold text-slate-900 mt-2">{stats.totalPatients ?? 0}</h3>
+              </div>
+              <div className="p-3 bg-blue-50 text-blue-600 rounded-lg">
+                <Users size={22} />
+              </div>
+            </div>
+          </Card>
+          
+          <Card className="p-6 transition-all hover:shadow-md duration-300">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Today's Appointments</p>
+                <h3 className="text-3xl font-bold text-slate-900 mt-2">{stats.todayAppointments ?? 0}</h3>
+              </div>
+              <div className="p-3 bg-emerald-50 text-emerald-600 rounded-lg">
+                <Calendar size={22} />
+              </div>
+            </div>
+          </Card>
+
+          <Card className="p-6 transition-all hover:shadow-md duration-300">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Waiting Patients</p>
+                <h3 className="text-3xl font-bold text-slate-900 mt-2">{stats.waitingPatients ?? 0}</h3>
+              </div>
+              <div className="p-3 bg-amber-50 text-amber-600 rounded-lg">
+                <Clock size={22} />
+              </div>
+            </div>
+          </Card>
+        </div>
+      )}
       
       {renderDashboardContent()}
     </div>

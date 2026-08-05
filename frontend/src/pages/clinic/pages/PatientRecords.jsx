@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import api from '../../../api';
-import { Plus, Search, Eye, Edit2, Trash2, Calendar, Phone, Mail, MapPin, User, Activity, ShieldAlert } from 'lucide-react';
+import { Plus, Search, Eye, Edit2, Trash2, Calendar, Phone, Mail, MapPin, User, Activity, ShieldAlert, Stethoscope } from 'lucide-react';
 import { Button } from '../../../components/ui/Button';
 import { Input } from '../../../components/ui/Input';
 import { Card } from '../../../components/ui/Card';
@@ -10,6 +11,7 @@ import { Badge } from '../../../components/ui/Badge';
 import { showToast } from '../../../utils/toast';
 
 const PatientRecords = () => {
+  const navigate = useNavigate();
   const [patients, setPatients] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -254,20 +256,37 @@ const PatientRecords = () => {
                       {calculateAge(p.dateOfBirth)} yrs <span className="text-xs text-slate-400 block">{formatDate(p.dateOfBirth)}</span>
                     </td>
                     <td className="px-6 py-4">
-                      <Badge variant={p.gender === 'Male' ? 'primary' : p.gender === 'Female' ? 'success' : 'warning'}>
+                      <span
+                        style={{
+                          color:
+                            p.gender === 'Male'
+                              ? '#2563EB'
+                              : p.gender === 'Female'
+                              ? '#EC4899'
+                              : '#7C3AED',
+                          fontWeight: 600,
+                        }}
+                      >
                         {p.gender}
-                      </Badge>
+                      </span>
                     </td>
                     <td className="px-6 py-4 text-slate-600 font-medium">{p.phone}</td>
                     <td className="px-6 py-4 text-slate-500">{formatDate(p.createdAt)}</td>
                     <td className="px-6 py-4 text-right">
-                      <div className="flex items-center justify-end gap-2">
+                      <div className="flex items-center justify-end gap-1">
                         <button
                           onClick={() => handleOpenDetails(p)}
                           className="text-slate-400 hover:text-blue-600 hover:bg-blue-50 p-1.5 rounded-lg transition-colors"
-                          title="View History"
+                          title="View Clinical History"
                         >
                           <Eye size={15} />
+                        </button>
+                        <button
+                          onClick={() => navigate(`/clinic/diagnosis-treatment?patientId=${p._id}`)}
+                          className="text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 p-1.5 rounded-lg transition-colors"
+                          title="View All Diagnoses"
+                        >
+                          <Stethoscope size={15} />
                         </button>
                         <button
                           onClick={() => handleOpenEdit(p)}

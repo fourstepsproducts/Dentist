@@ -13,7 +13,7 @@ const Sidebar = ({ role, closeSidebar }) => {
     { name: 'Dashboard', path: '/clinic/dashboard', icon: LayoutDashboard },
     { name: 'Patient Records', path: '/clinic/patient-records', icon: Users },
     { name: 'Chief Complaint', path: '/clinic/chief-complaint', icon: FileText },
-    { name: 'Diagnosis & Treatment', path: '/clinic/diagnosis-treatment', icon: Activity },
+    { name: 'Clinical Visits', path: '/clinic/diagnosis-treatment', icon: Stethoscope },
     { name: 'Treatment Records', path: '/clinic/treatment-records', icon: ClipboardList },
     { name: 'Appointments', path: '/clinic/appointments', icon: Calendar },
     { name: 'Document Upload', path: '/clinic/documents', icon: UploadCloud },

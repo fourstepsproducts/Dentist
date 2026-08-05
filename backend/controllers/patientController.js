@@ -1,4 +1,5 @@
 const Patient = require('../models/Patient');
+const { generatePatientId } = require('../utils/generateId');
 
 // @desc    Get all patients with search filter
 // @route   GET /api/patients
@@ -6,7 +7,9 @@ const Patient = require('../models/Patient');
 const getPatients = async (req, res) => {
   try {
     const { search } = req.query;
-    let query = {};
+
+    // Always exclude soft-deleted records from normal listings
+    let query = { isDeleted: { $ne: true } };
 
     if (search && search.trim()) {
       const searchRegex = new RegExp(search.trim(), 'i');
@@ -30,7 +33,8 @@ const getPatients = async (req, res) => {
 // @access  Private
 const getPatientById = async (req, res) => {
   try {
-    const patient = await Patient.findById(req.params.id);
+    // Also exclude soft-deleted patients from individual lookups
+    const patient = await Patient.findOne({ _id: req.params.id, isDeleted: { $ne: true } });
     if (!patient) {
       return res.status(404).json({ message: 'Patient not found' });
     }
@@ -52,16 +56,12 @@ const createPatient = async (req, res) => {
       return res.status(400).json({ message: 'Please provide all required fields' });
     }
 
-    // Auto-generate safe unique patient ID
-    const lastPatient = await Patient.findOne().sort({ createdAt: -1 });
-    let nextNumber = 1;
-    if (lastPatient && lastPatient.patientId) {
-      const match = lastPatient.patientId.match(/PAT-(\d+)/);
-      if (match) {
-        nextNumber = parseInt(match[1], 10) + 1;
-      }
-    }
-    const patientId = `PAT-${String(nextNumber).padStart(4, '0')}`;
+    // ── Atomic Counter ID Generation ───────────────────────────────
+    // generatePatientId() atomically increments a dedicated 'patient'
+    // counter in the Counters collection using MongoDB's $inc operator.
+    // This is a single atomic DB operation — no race conditions possible.
+    // Deleting any patient record never affects this counter.
+    const patientId = await generatePatientId();
 
     const newPatient = await Patient.create({
       patientId,
@@ -120,13 +120,24 @@ const updatePatient = async (req, res) => {
 // @access  Private
 const deletePatient = async (req, res) => {
   try {
-    const patient = await Patient.findById(req.params.id);
+    // ── Soft Delete — Record is NEVER permanently removed ──────────
+    // isDeleted = true hides the patient from all normal listings.
+    // The record (and its patientId) remains in the database forever so:
+    //   - Old invoices, appointments, and audit logs still point to a valid record
+    //   - The patientId is NEVER reused for a new patient
+    //   - The record can be restored by an administrator if needed
+    const patient = await Patient.findOne({ _id: req.params.id, isDeleted: { $ne: true } });
     if (!patient) {
       return res.status(404).json({ message: 'Patient not found' });
     }
 
-    await Patient.deleteOne({ _id: req.params.id });
-    res.json({ message: 'Patient removed successfully' });
+    patient.isDeleted = true;
+    patient.deletedAt = new Date();
+    // If auth middleware attaches req.user, record who deleted it
+    patient.deletedBy = req.user ? req.user._id : null;
+    await patient.save();
+
+    res.json({ message: 'Patient deleted successfully' });
   } catch (error) {
     console.error('Error deleting patient:', error);
     res.status(500).json({ message: 'Server Error' });

@@ -69,6 +69,27 @@ const patientSchema = new mongoose.Schema(
         uploadDate: { type: Date, default: Date.now },
       },
     ],
+
+    // ── Soft Delete Fields ──────────────────────────────────────────
+    // Records are NEVER permanently deleted. Instead:
+    //   isDeleted = true  → hidden from normal listings
+    //   deletedAt         → timestamp of when it was deleted
+    //   deletedBy         → which user performed the delete
+    // This preserves audit trails, appointment references, invoices, etc.
+    isDeleted: {
+      type: Boolean,
+      default: false,
+      index: true,          // fast filtering in queries
+    },
+    deletedAt: {
+      type: Date,
+      default: null,
+    },
+    deletedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      default: null,
+    },
   },
   {
     timestamps: true,

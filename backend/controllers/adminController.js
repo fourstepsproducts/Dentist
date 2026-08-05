@@ -1,6 +1,8 @@
 const bcrypt = require('bcryptjs');
 const User = require('../models/User');
-const { generateEmployeeId } = require('../utils/generateEmployeeId');
+// generateEmployeeId now uses an atomic MongoDB counter (Counters collection)
+// — no race conditions, IDs never reuse, deletions never affect future IDs
+const { generateEmployeeId } = require('../utils/generateId');
 
 // --- STAFF OPERATIONS ---
 

@@ -24,6 +24,7 @@ app.use('/api/specializations', require('./routes/specializationRoutes'));
 app.use('/api/clinic-dashboard', require('./routes/clinicDashboardRoutes'));
 app.use('/api/patients', require('./routes/patientRoutes'));
 app.use('/api/appointments', require('./routes/appointmentRoutes'));
+app.use('/api/diagnoses', require('./routes/diagnosisRoutes'));
 
 // Basic health check route
 app.get('/', (req, res) => {

@@ -4,6 +4,7 @@ import { Card } from '../../../components/ui/Card';
 import { PatientSelector } from '../../../components/ui/PatientSelector';
 import { Button } from '../../../components/ui/Button';
 import { Input } from '../../../components/ui/Input';
+import { Select } from '../../../components/ui/Select';
 import { Plus, HelpCircle, FileText, UploadCloud } from 'lucide-react';
 import { showToast } from '../../../utils/toast';
 
@@ -101,18 +102,18 @@ const Documents = () => {
               </div>
               <div className="space-y-1.5">
                 <label className="text-xs font-semibold text-slate-500 uppercase">Document Category *</label>
-                <select
+                <Select
                   value={docType}
                   onChange={(e) => setDocType(e.target.value)}
-                  className="w-full h-10 px-3 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-600 shadow-sm text-sm bg-white"
+                  options={[
+                    { value: 'X-Ray', label: 'X-Ray / Scan' },
+                    { value: 'Prescription', label: 'Prescription File' },
+                    { value: 'Lab Report', label: 'Lab Report' },
+                    { value: 'Consent Form', label: 'Consent Form' },
+                    { value: 'Other', label: 'Other Clinical Note' },
+                  ]}
                   required
-                >
-                  <option value="X-Ray">X-Ray / Scan</option>
-                  <option value="Prescription">Prescription File</option>
-                  <option value="Lab Report">Lab Report</option>
-                  <option value="Consent Form">Consent Form</option>
-                  <option value="Other">Other Clinical Note</option>
-                </select>
+                />
               </div>
               <div className="border border-dashed border-slate-200 rounded-xl p-4 bg-slate-50/50 flex flex-col items-center justify-center text-center text-xs text-slate-500">
                 <UploadCloud size={28} className="text-slate-400 mb-1.5" />

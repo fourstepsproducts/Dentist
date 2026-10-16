@@ -10,6 +10,12 @@ const appointmentSchema = new mongoose.Schema(
     doctor: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
+      default: null,
+    },
+    doctorName: {
+      type: String,
+      trim: true,
+      default: '',
     },
     date: {
       type: Date,
@@ -17,8 +23,30 @@ const appointmentSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ['Scheduled', 'Waiting', 'Completed', 'Cancelled'],
+      enum: ['Scheduled', 'Checked In', 'In Consultation', 'Missed', 'Confirmed', 'Completed', 'Cancelled', 'No Show'],
       default: 'Scheduled',
+    },
+    actualCheckInTime: {
+      type: Date,
+      default: null,
+    },
+    chiefComplaint: {
+      type: String,
+      trim: true,
+      default: '',
+    },
+    visit: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Diagnosis',
+      default: null,
+    },
+    isManualOverride: {
+      type: Boolean,
+      default: false,
+    },
+    manualOverrideAt: {
+      type: Date,
+      default: null,
     },
   },
   {

@@ -3,15 +3,18 @@ import { useLocation } from 'react-router-dom';
 import api from '../../../api';
 import { Button } from '../../../components/ui/Button';
 import { Input } from '../../../components/ui/Input';
+import { Select } from '../../../components/ui/Select';
 import { Modal } from '../../../components/ui/Modal';
 import { showToast } from '../../../utils/toast';
 import {
   Search, Plus, User, Phone, CalendarDays, Stethoscope,
   ClipboardList, ChevronRight, HelpCircle, Clock,
   UserCheck, Activity, MessageSquare, Gift, Loader2,
-  FileText, BookOpen,
+  FileText, BookOpen, IndianRupee,
 } from 'lucide-react';
 import { cn } from '../../../lib/utils';
+
+import DoctorSelector from '../../../components/ui/DoctorSelector';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -35,12 +38,15 @@ const DEFAULT_FORM = {
   visitType: 'normal',   // 'normal' | 'specialist'
   visitDate: todayISO(),
   consultingDoctor: '',  // specialist only
+  consultingDoctorId: '',
   attendingDoctor: '',
+  attendingDoctorId: '',
+  appointmentId: '',
   chiefComplaint: '',
-  diagnosis: '',
-  treatmentPerformed: '',
   notes: '',
   incentives: '',
+  consultingDoctorIncentive: '',
+  attendingDoctorIncentive: '',
 };
 
 // ─── Reusable EMR sub-components ─────────────────────────────────────────────
@@ -176,14 +182,14 @@ const VisitCard = ({ visit }) => {
           Clinical Assessment
         </h4>
         <div className="divide-y divide-gray-100">
-          <EMRRow icon={MessageSquare} label="Chief Complaint" value={visit.chiefComplaint} />
+          <EMRRow icon={MessageSquare} label="Chief Complaint" value={visit.chiefComplaint || 'Not recorded'} />
           <EMRRow icon={Activity} label="Diagnosis" value={visit.diagnosis} />
           <EMRRow icon={ClipboardList} label="Treatment Performed" value={visit.treatmentPerformed || visit.treatmentPlan || '—'} />
         </div>
       </div>
 
       {/* Additional Information Section (if applicable) */}
-      {(visit.notes || visit.incentives) && (
+      {(visit.notes || visit.incentives || visit.consultingDoctorIncentive > 0 || visit.attendingDoctorIncentive > 0) && (
         <div className="mb-4">
           <h4 className="text-[18px] font-bold text-gray-900 mb-2 flex items-center gap-2">
             <BookOpen className="w-5 h-5 text-blue-600" />
@@ -191,7 +197,33 @@ const VisitCard = ({ visit }) => {
           </h4>
           <div className="divide-y divide-gray-100">
             <EMRRow icon={BookOpen} label="Notes" value={visit.notes} />
-            <EMRRow icon={Gift} label="Incentives" value={visit.incentives} />
+            {isSpecialist && (visit.consultingDoctorIncentive > 0 || visit.attendingDoctorIncentive > 0) ? (
+              <div className="flex flex-col sm:flex-row sm:items-start gap-2 sm:gap-4 py-3.5 border-b border-gray-100 last:border-0">
+                <span className="w-48 shrink-0 flex items-center gap-2 pt-0.5">
+                  <Gift size={14} className="text-gray-400 shrink-0" />
+                  <span className="text-[12px] font-semibold uppercase tracking-wider text-gray-400 leading-tight">Incentives</span>
+                </span>
+                <div className="flex-1 space-y-1.5 text-sm">
+                  <div className="flex items-center justify-between max-w-sm py-1 px-2.5 rounded-lg bg-blue-50/50 border border-blue-100">
+                    <span className="text-gray-600 text-xs font-medium">Consulting Doctor ({visit.consultingDoctor || 'Consultant'}):</span>
+                    <span className="font-bold text-blue-700">₹{(visit.consultingDoctorIncentive || 0).toLocaleString()}</span>
+                  </div>
+                  <div className="flex items-center justify-between max-w-sm py-1 px-2.5 rounded-lg bg-indigo-50/50 border border-indigo-100">
+                    <span className="text-gray-600 text-xs font-medium">Attending Doctor ({visit.attendingDoctor || 'Attending'}):</span>
+                    <span className="font-bold text-indigo-700">₹{(visit.attendingDoctorIncentive || 0).toLocaleString()}</span>
+                  </div>
+                  <div className="flex items-center justify-between max-w-sm pt-1 px-2.5 text-xs text-gray-500 font-semibold border-t border-gray-100">
+                    <span>Total Allocated Incentive:</span>
+                    <span className="text-gray-900 font-bold">₹{((visit.consultingDoctorIncentive || 0) + (visit.attendingDoctorIncentive || 0)).toLocaleString()}</span>
+                  </div>
+                  {visit.incentives && (
+                    <p className="text-xs text-gray-500 italic pt-1">{visit.incentives}</p>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <EMRRow icon={Gift} label="Incentives" value={visit.incentives} />
+            )}
           </div>
         </div>
       )}
@@ -217,6 +249,7 @@ const DiagnosisTreatment = () => {
   const [patientsLoading, setPatientsLoading]   = useState(true);
   const [searchQuery, setSearchQuery]           = useState('');
   const [selectedPatient, setSelectedPatient]   = useState(null);
+  const [patientAppointments, setPatientAppointments] = useState([]);
   const [visits, setVisits]                     = useState([]);
   const [visitsLoading, setVisitsLoading]       = useState(false);
   const [isFormOpen, setIsFormOpen]             = useState(false);
@@ -241,12 +274,51 @@ const DiagnosisTreatment = () => {
 
   useEffect(() => { fetchPatients(); }, [fetchPatients]);
 
-  // Pre-select patient via ?patientId= URL param
+  // Fetch patient appointments for matching complaints
+  const fetchPatientAppointments = useCallback(async (patientId) => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await api.get(`/appointments?patientId=${patientId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setPatientAppointments(res.data.appointments || res.data || []);
+    } catch (err) {
+      console.error('Failed to fetch appointments:', err);
+    }
+  }, []);
+
+  // Pre-select patient & open visit form via URL params
   useEffect(() => {
-    const id = new URLSearchParams(location.search).get('patientId');
+    const params = new URLSearchParams(location.search);
+    const id = params.get('patientId');
+    const apptId = params.get('appointmentId');
+    const autoCreate = params.get('createVisit') === 'true';
+
     if (id && patients.length > 0) {
       const found = patients.find((p) => p._id === id);
-      if (found) handleSelectPatient(found);
+      if (found) {
+        handleSelectPatient(found);
+
+        if (autoCreate || apptId) {
+          // Fetch appointments and auto-open form
+          const token = localStorage.getItem('token');
+          api.get(`/appointments?patientId=${id}`, {
+            headers: { Authorization: `Bearer ${token}` },
+          }).then((res) => {
+            const appts = res.data.appointments || res.data || [];
+            setPatientAppointments(appts);
+            
+            const targetAppt = appts.find(a => a._id === apptId) || appts[0];
+            setFormData({
+              ...DEFAULT_FORM,
+              visitDate: todayISO(),
+              appointmentId: targetAppt ? targetAppt._id : (apptId || ''),
+              chiefComplaint: targetAppt?.chiefComplaint || '',
+            });
+            setIsFormOpen(true);
+          }).catch(console.error);
+        }
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.search, patients]);
@@ -271,6 +343,7 @@ const DiagnosisTreatment = () => {
     setSelectedPatient(patient);
     setVisits([]);
     fetchVisits(patient._id);
+    fetchPatientAppointments(patient._id);
   };
 
   const handleSearch = (e) => {
@@ -280,22 +353,88 @@ const DiagnosisTreatment = () => {
   };
 
   const handleOpenForm = () => {
-    setFormData({ ...DEFAULT_FORM, visitDate: todayISO() });
+    // If patient has an appointment, auto-pick the latest one without a visit or with complaint
+    const targetAppt = patientAppointments.find(a => !a.visit) || patientAppointments[0];
+    setFormData({
+      ...DEFAULT_FORM,
+      visitDate: todayISO(),
+      appointmentId: targetAppt ? targetAppt._id : '',
+      chiefComplaint: targetAppt?.chiefComplaint || '',
+    });
     setIsFormOpen(true);
+  };
+
+  const handleAppointmentSelectChange = (apptId) => {
+    const selectedAppt = patientAppointments.find(a => a._id === apptId);
+    setFormData(prev => ({
+      ...prev,
+      appointmentId: apptId,
+      chiefComplaint: selectedAppt?.chiefComplaint || prev.chiefComplaint || '',
+    }));
   };
 
   const handleChange = (e) => {
     setFormData((p) => ({ ...p, [e.target.name]: e.target.value }));
   };
 
+  const handleVisitTypeChange = (newType) => {
+    setFormData((prev) => {
+      if (newType === prev.visitType) return prev;
+
+      if (newType === 'normal') {
+        return {
+          ...prev,
+          visitType: 'normal',
+          attendingDoctorId: prev.consultingDoctorId || '',
+          attendingDoctor: prev.consultingDoctor || '',
+        };
+      } else {
+        return {
+          ...prev,
+          visitType: 'specialist',
+          attendingDoctorId: '',
+          attendingDoctor: '',
+        };
+      }
+    });
+  };
+
+  const handleConsultingDoctorChange = (doc) => {
+    const docId = doc?._id || doc?.doctorId || '';
+    const docName = doc?.name || doc?.doctorName || '';
+
+    setFormData((prev) => {
+      if (prev.visitType === 'normal') {
+        return {
+          ...prev,
+          consultingDoctorId: docId,
+          consultingDoctor: docName,
+          attendingDoctorId: docId,
+          attendingDoctor: docName,
+        };
+      } else {
+        return {
+          ...prev,
+          consultingDoctorId: docId,
+          consultingDoctor: docName,
+        };
+      }
+    });
+  };
+
+  const handleAttendingDoctorChange = (doc) => {
+    const docId = doc?._id || doc?.doctorId || '';
+    const docName = doc?.name || doc?.doctorName || '';
+
+    setFormData((prev) => ({
+      ...prev,
+      attendingDoctorId: docId,
+      attendingDoctor: docName,
+    }));
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const { chiefComplaint, diagnosis, treatmentPerformed } = formData;
-
-    if (!chiefComplaint.trim() || !diagnosis.trim() || !treatmentPerformed.trim()) {
-      showToast.warning('Chief Complaint, Diagnosis, and Treatment Performed are required.');
-      return;
-    }
 
     try {
       setSaving(true);
@@ -316,6 +455,7 @@ const DiagnosisTreatment = () => {
   };
 
   const isSpecialist = formData.visitType === 'specialist';
+  const currentAppt = patientAppointments.find(a => a._id === formData.appointmentId);
 
   return (
     <div className="space-y-6">
@@ -476,6 +616,64 @@ const DiagnosisTreatment = () => {
       >
         <form onSubmit={handleSubmit} className="space-y-5">
 
+          {/* ── Appointment Context & Chief Complaint Auto-Population ── */}
+          {patientAppointments.length > 0 && (
+            <div>
+              <FS title="Linked Appointment & Complaint" />
+              <div className="space-y-3">
+                <div>
+                  <FL>Select Appointment</FL>
+                  <Select
+                    value={formData.appointmentId}
+                    onChange={(e) => handleAppointmentSelectChange(e.target.value)}
+                    placeholder="-- Direct Visit (No Appointment) --"
+                    options={[
+                      { value: '', label: '-- Direct Visit (No Appointment) --' },
+                      ...patientAppointments.map((appt) => ({
+                        value: appt._id,
+                        label: `${new Date(appt.date).toLocaleDateString()} at ${appt.time} - ${appt.chiefComplaint ? `Complaint: "${appt.chiefComplaint}"` : 'No complaint recorded'}`
+                      }))
+                    ]}
+                  />
+                </div>
+
+                {/* Auto-populated Chief Complaint Notice / Edit field */}
+                <div>
+                  <FL>Chief Complaint</FL>
+                  <TA
+                    name="chiefComplaint"
+                    value={formData.chiefComplaint}
+                    onChange={handleChange}
+                    placeholder="e.g. Pain in left tooth for 3 days (automatically inherited if recorded on appointment)"
+                    rows={2}
+                  />
+                  {currentAppt?.chiefComplaint && (
+                    <p className="text-xs text-emerald-600 mt-1 flex items-center gap-1 font-medium">
+                      ✓ Automatically inherited from Appointment ({new Date(currentAppt.date).toLocaleDateString()} at {currentAppt.time})
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* If patient has no appointments recorded yet, still show Chief Complaint field */}
+          {patientAppointments.length === 0 && (
+            <div>
+              <FS title="Clinical Assessment" />
+              <div>
+                <FL>Chief Complaint</FL>
+                <TA
+                  name="chiefComplaint"
+                  value={formData.chiefComplaint}
+                  onChange={handleChange}
+                  placeholder="e.g. Pain in left tooth for 3 days"
+                  rows={2}
+                />
+              </div>
+            </div>
+          )}
+
           {/* ── Case type selection ─────────────────────────────────────── */}
           <div>
             <FS title="Treatment Type" />
@@ -484,13 +682,13 @@ const DiagnosisTreatment = () => {
                 {
                   val: 'normal',
                   label: 'Normal Treatment',
-                  sub: 'Attending Doctor only',
+                  sub: 'In-house Doctor',
                   icon: Stethoscope,
                 },
                 {
                   val: 'specialist',
                   label: 'Specialist Case',
-                  sub: 'Consulting + Attending Doctor',
+                  sub: 'Consulting + External Specialist',
                   icon: UserCheck,
                 },
               ].map(({ val, label, sub, icon: Icon }) => {
@@ -499,7 +697,7 @@ const DiagnosisTreatment = () => {
                   <button
                     key={val}
                     type="button"
-                    onClick={() => setFormData((p) => ({ ...p, visitType: val }))}
+                    onClick={() => handleVisitTypeChange(val)}
                     className={cn(
                       'flex items-start gap-3 p-4 rounded-xl border-2 text-left transition-all',
                       active
@@ -527,72 +725,38 @@ const DiagnosisTreatment = () => {
           {/* ── Visit details ───────────────────────────────────────────── */}
           <div>
             <FS title="Visit Details" />
-            <div className={cn('grid gap-4', isSpecialist ? 'grid-cols-1' : 'grid-cols-2')}>
+            <div className="space-y-4">
               <div>
                 <FL req>Visit Date</FL>
                 <Input type="date" name="visitDate" value={formData.visitDate} onChange={handleChange} required />
               </div>
 
-              {/* Consulting Doctor — specialist only */}
-              {isSpecialist && (
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <FL>Consulting Doctor</FL>
-                    <Input name="consultingDoctor" value={formData.consultingDoctor} onChange={handleChange} placeholder="Dr. Name" />
-                  </div>
-                  <div>
-                    <FL>Attending Doctor</FL>
-                    <Input name="attendingDoctor" value={formData.attendingDoctor} onChange={handleChange} placeholder="Dr. Name" />
-                  </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <FL>Consulting Doctor</FL>
+                  <DoctorSelector
+                    type="internal"
+                    value={formData.consultingDoctorId || formData.consultingDoctor}
+                    selectedDoctorName={formData.consultingDoctor}
+                    onChange={handleConsultingDoctorChange}
+                    placeholder="Select Consulting Doctor"
+                  />
                 </div>
-              )}
-
-              {/* Normal: only attending */}
-              {!isSpecialist && (
                 <div>
                   <FL>Attending Doctor</FL>
-                  <Input name="attendingDoctor" value={formData.attendingDoctor} onChange={handleChange} placeholder="Dr. Name" />
+                  <DoctorSelector
+                    type={isSpecialist ? 'external' : 'internal'}
+                    value={formData.attendingDoctorId || formData.attendingDoctor}
+                    selectedDoctorName={formData.attendingDoctor}
+                    onChange={handleAttendingDoctorChange}
+                    placeholder={isSpecialist ? 'Select External Doctor' : 'Same as Consulting Doctor'}
+                    disabled={!isSpecialist}
+                  />
                 </div>
-              )}
+              </div>
             </div>
           </div>
 
-          {/* ── Clinical assessment ─────────────────────────────────────── */}
-          <div>
-            <FS title="Clinical Assessment" />
-            <div className="space-y-4">
-              <div>
-                <FL req>Patient Problem / Chief Complaint</FL>
-                <TA
-                  name="chiefComplaint"
-                  value={formData.chiefComplaint}
-                  onChange={handleChange}
-                  placeholder="e.g. Severe toothache in lower left molar since 3 days…"
-                  required
-                />
-              </div>
-              <div>
-                <FL req>Diagnosis</FL>
-                <TA
-                  name="diagnosis"
-                  value={formData.diagnosis}
-                  onChange={handleChange}
-                  placeholder="e.g. Deep dental caries — tooth #36, pulpitis suspected…"
-                  required
-                />
-              </div>
-              <div>
-                <FL req>Treatment Performed</FL>
-                <TA
-                  name="treatmentPerformed"
-                  value={formData.treatmentPerformed}
-                  onChange={handleChange}
-                  placeholder="e.g. Temporary filling applied. RCT session 1 completed…"
-                  required
-                />
-              </div>
-            </div>
-          </div>
 
           {/* ── Additional ──────────────────────────────────────────────── */}
           <div>
@@ -605,19 +769,73 @@ const DiagnosisTreatment = () => {
                   value={formData.notes}
                   onChange={handleChange}
                   placeholder="Internal notes, allergies, follow-up reminders…"
-                  rows={2}
+                  rows={isSpecialist ? 4 : 2}
                 />
               </div>
-              <div>
-                <FL>Incentives <span className="font-normal text-gray-400">(optional)</span></FL>
-                <TA
-                  name="incentives"
-                  value={formData.incentives}
-                  onChange={handleChange}
-                  placeholder="e.g. 10% discount applied…"
-                  rows={2}
-                />
-              </div>
+
+              {isSpecialist ? (
+                /* Specialist Case: Separate Incentives for Consulting Doctor & Attending Doctor */
+                <div className="space-y-3 bg-purple-50/40 p-3.5 rounded-xl border border-purple-100">
+                  <div className="flex items-center justify-between">
+                    <FL>Doctor Incentives <span className="font-normal text-gray-400">(optional)</span></FL>
+                    {((parseFloat(formData.consultingDoctorIncentive) || 0) + (parseFloat(formData.attendingDoctorIncentive) || 0)) > 0 && (
+                      <span className="text-[11px] font-bold text-purple-700 bg-purple-100/70 px-2 py-0.5 rounded-full">
+                        Total: ₹{((parseFloat(formData.consultingDoctorIncentive) || 0) + (parseFloat(formData.attendingDoctorIncentive) || 0)).toLocaleString()}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Consulting Doctor Incentive */}
+                  <div>
+                    <label className="block text-[11px] font-semibold text-gray-600 mb-1">
+                      Consulting Doctor Incentive {formData.consultingDoctor ? `(${formData.consultingDoctor})` : ''}
+                    </label>
+                    <div className="relative">
+                      <IndianRupee size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                      <Input
+                        type="number"
+                        name="consultingDoctorIncentive"
+                        value={formData.consultingDoctorIncentive}
+                        onChange={handleChange}
+                        placeholder="e.g. 500"
+                        min="0"
+                        className="pl-8 text-xs h-9 bg-white"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Attending Doctor Incentive */}
+                  <div>
+                    <label className="block text-[11px] font-semibold text-gray-600 mb-1">
+                      Attending Doctor Incentive {formData.attendingDoctor ? `(${formData.attendingDoctor})` : ''}
+                    </label>
+                    <div className="relative">
+                      <IndianRupee size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                      <Input
+                        type="number"
+                        name="attendingDoctorIncentive"
+                        value={formData.attendingDoctorIncentive}
+                        onChange={handleChange}
+                        placeholder="e.g. 1000"
+                        min="0"
+                        className="pl-8 text-xs h-9 bg-white"
+                      />
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                /* Normal Treatment: Keep existing incentives field unchanged */
+                <div>
+                  <FL>Incentives <span className="font-normal text-gray-400">(optional)</span></FL>
+                  <TA
+                    name="incentives"
+                    value={formData.incentives}
+                    onChange={handleChange}
+                    placeholder="e.g. 10% discount applied…"
+                    rows={2}
+                  />
+                </div>
+              )}
             </div>
           </div>
 

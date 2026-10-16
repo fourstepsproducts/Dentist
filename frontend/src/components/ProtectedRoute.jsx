@@ -7,7 +7,11 @@ const ProtectedRoute = ({ allowedRoles }) => {
   const location = useLocation();
 
   if (loading) {
-    return <div>Loading...</div>; // Could be a spinner
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600"></div>
+      </div>
+    );
   }
 
   if (!user) {
@@ -19,14 +23,23 @@ const ProtectedRoute = ({ allowedRoles }) => {
     return <Navigate to="/clinic/profile" replace />;
   }
 
-  if (allowedRoles && allowedRoles.includes('clinic_all')) {
-    if (user.role.toLowerCase() === 'admin') {
-      // Allow admin
-    } else if (!['doctor', 'nurse', 'receptionist', 'lab staff', 'pharmacist', 'cleaner', 'security', 'admin staff'].includes(user.role.toLowerCase())) {
-      return <Navigate to="/unauthorized" replace />;
+  const userRole = (user.role || '').toLowerCase();
+
+  if (allowedRoles && allowedRoles.length > 0) {
+    if (allowedRoles.includes('clinic_all')) {
+      if (userRole === 'admin') {
+        // Admin allowed
+      } else if (userRole === 'inventory') {
+        return <Navigate to="/unauthorized" replace />;
+      } else {
+        // All other clinic/staff roles allowed
+      }
+    } else {
+      const normalizedAllowed = allowedRoles.map(r => r.toLowerCase());
+      if (!normalizedAllowed.includes(userRole)) {
+        return <Navigate to="/unauthorized" replace />;
+      }
     }
-  } else if (allowedRoles && !allowedRoles.map(r => r.toLowerCase()).includes(user.role.toLowerCase())) {
-    return <Navigate to="/unauthorized" replace />;
   }
 
   return <Outlet />;

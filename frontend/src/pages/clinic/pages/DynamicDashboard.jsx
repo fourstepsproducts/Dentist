@@ -1,10 +1,12 @@
 import React, { useContext, useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import api from '../../../api';
 import { Users, Calendar, Clock } from 'lucide-react';
 import { AuthContext } from '../../../context/AuthContext';
 import { Card } from '../../../components/ui/Card';
 
 const DynamicDashboard = () => {
+  const navigate = useNavigate();
   const { user } = useContext(AuthContext);
   const [stats, setStats] = useState({
     totalPatients: 0,
@@ -42,11 +44,11 @@ const DynamicDashboard = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             <Card className="p-6">
               <h3 className="font-bold text-lg mb-2">Today's Appointments</h3>
-              <p className="text-4xl font-bold text-blue-600">8</p>
+              <p className="text-4xl font-bold text-blue-600">{stats.todayAppointments ?? 0}</p>
             </Card>
-            <Card className="p-6">
+            <Card className="p-6 cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate('/clinic/queue')}>
               <h3 className="font-bold text-lg mb-2">Patient Queue</h3>
-              <p className="text-4xl font-bold text-indigo-600">3</p>
+              <p className="text-4xl font-bold text-indigo-600">{stats.waitingPatients ?? 0}</p>
             </Card>
             <Card className="p-6">
               <h3 className="font-bold text-lg mb-2">Lab Reports Ready</h3>
@@ -64,11 +66,11 @@ const DynamicDashboard = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             <Card className="p-6">
               <h3 className="font-bold text-lg mb-2">Assigned Patients</h3>
-              <p className="text-4xl font-bold text-teal-600">12</p>
+              <p className="text-4xl font-bold text-teal-600">{stats.totalPatients ?? 0}</p>
             </Card>
             <Card className="p-6">
               <h3 className="font-bold text-lg mb-2">Vitals Queue</h3>
-              <p className="text-4xl font-bold text-orange-500">4</p>
+              <p className="text-4xl font-bold text-orange-500">{stats.waitingPatients ?? 0}</p>
             </Card>
             <div className="col-span-1 md:col-span-2 lg:col-span-3 mt-4">
               <Card className="p-6 h-64 flex items-center justify-center text-slate-400">
@@ -80,9 +82,9 @@ const DynamicDashboard = () => {
       case 'receptionist':
         return (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <Card className="p-6">
+            <Card className="p-6 cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate('/clinic/queue')}>
               <h3 className="font-bold text-lg mb-2">Check-in Queue</h3>
-              <p className="text-4xl font-bold text-purple-600">5</p>
+              <p className="text-4xl font-bold text-purple-600">{stats.waitingPatients ?? 0}</p>
             </Card>
             <Card className="p-6">
               <h3 className="font-bold text-lg mb-2">Pending Billing</h3>

@@ -1,4 +1,6 @@
 const Patient = require('../models/Patient');
+const Diagnosis = require('../models/Diagnosis');
+const Appointment = require('../models/Appointment');
 const { generatePatientId } = require('../utils/generateId');
 
 // @desc    Get all patients with search filter
@@ -28,17 +30,92 @@ const getPatients = async (req, res) => {
   }
 };
 
-// @desc    Get patient by ID
+// @desc    Get patient by ID with aggregated clinical history records
 // @route   GET /api/patients/:id
 // @access  Private
 const getPatientById = async (req, res) => {
   try {
-    // Also exclude soft-deleted patients from individual lookups
-    const patient = await Patient.findOne({ _id: req.params.id, isDeleted: { $ne: true } });
-    if (!patient) {
+    const patientDoc = await Patient.findOne({ _id: req.params.id, isDeleted: { $ne: true } }).lean();
+    if (!patientDoc) {
       return res.status(404).json({ message: 'Patient not found' });
     }
-    res.json(patient);
+
+    // Fetch clinical visits logged for this patient in Diagnosis collection
+    const diagnosisRecords = await Diagnosis.find({ patient: req.params.id }).sort({ visitDate: -1, createdAt: -1 }).lean();
+
+    const chiefComplaintsMap = new Map();
+    (patientDoc.chiefComplaints || []).forEach(c => {
+      if (c.text) {
+        chiefComplaintsMap.set(c.text.trim() + '_' + (c.date || c.createdAt || ''), {
+          _id: c._id,
+          text: c.text,
+          date: c.date || c.createdAt,
+          hasAppointment: Boolean(c.hasAppointment || c.appointmentId),
+          appointmentId: c.appointmentId || null,
+          recordedBy: c.recordedBy || '',
+        });
+      }
+    });
+    diagnosisRecords.forEach(d => {
+      if (d.chiefComplaint) {
+        const key = d.chiefComplaint.trim() + '_' + (d.visitDate || d.createdAt || '');
+        if (!chiefComplaintsMap.has(key)) {
+          chiefComplaintsMap.set(key, {
+            _id: d._id,
+            text: d.chiefComplaint,
+            date: d.visitDate || d.createdAt,
+            hasAppointment: false,
+            recordedBy: d.attendingDoctor || d.createdBy?.name || '',
+          });
+        }
+      }
+    });
+
+    const appointmentRecords = await Appointment.find({ patient: req.params.id }).sort({ date: -1, createdAt: -1 }).lean();
+    appointmentRecords.forEach(a => {
+      if (a.chiefComplaint) {
+        const key = a.chiefComplaint.trim() + '_' + (a.date || a.createdAt || '');
+        if (!chiefComplaintsMap.has(key)) {
+          chiefComplaintsMap.set(key, {
+            _id: a._id,
+            text: a.chiefComplaint,
+            date: a.date || a.createdAt,
+            hasAppointment: true,
+            appointmentId: a._id,
+            recordedBy: a.doctorName || '',
+          });
+        }
+      }
+    });
+
+    const diagnosesMap = new Map();
+    (patientDoc.diagnoses || []).forEach(d => {
+      if (d.diagnosis) diagnosesMap.set(d.diagnosis.trim(), { diagnosis: d.diagnosis, treatmentPlan: d.treatmentPlan || d.treatmentPerformed || '', date: d.date || d.createdAt });
+    });
+    diagnosisRecords.forEach(d => {
+      if (d.diagnosis && !diagnosesMap.has(d.diagnosis.trim())) {
+        diagnosesMap.set(d.diagnosis.trim(), { diagnosis: d.diagnosis, treatmentPlan: d.treatmentPerformed || '', date: d.visitDate || d.createdAt });
+      }
+    });
+
+    const treatmentsMap = new Map();
+    (patientDoc.treatments || []).forEach(t => {
+      if (t.name) treatmentsMap.set(t.name.trim(), { name: t.name, cost: t.cost || 0, status: t.status || 'Completed', date: t.date || t.createdAt });
+    });
+    diagnosisRecords.forEach(d => {
+      if (d.treatmentPerformed && !treatmentsMap.has(d.treatmentPerformed.trim())) {
+        treatmentsMap.set(d.treatmentPerformed.trim(), { name: d.treatmentPerformed, cost: 0, status: 'Completed', date: d.visitDate || d.createdAt });
+      }
+    });
+
+    res.json({
+      ...patientDoc,
+      chiefComplaints: Array.from(chiefComplaintsMap.values()),
+      diagnoses: Array.from(diagnosesMap.values()),
+      treatments: Array.from(treatmentsMap.values()),
+      documents: patientDoc.documents || [],
+      diagnosisRecords,
+    });
   } catch (error) {
     console.error('Error fetching patient details:', error);
     res.status(500).json({ message: 'Server Error' });

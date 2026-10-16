@@ -1,5 +1,5 @@
 import React from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useLocation } from 'react-router-dom';
 import { 
   Home, Users, Package, Settings, Stethoscope, Activity, 
   LayoutDashboard, FileText, ClipboardList, Calendar, 
@@ -8,58 +8,76 @@ import {
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 
+/**
+ * Route-aware matching logic:
+ * - /clinic/appointments and /clinic/queue map to Appointments
+ * - /clinic/diagnosis-treatment and /clinic/clinical-visits map to Clinical Visits
+ * - /inventory/add-products and /inventory/items map to Add Products
+ * - Supports nested routes without accidental partial prefix collisions
+ */
+const isRouteActive = (linkPath, currentPath) => {
+  if (!currentPath || !linkPath) return false;
+
+  // Exact match
+  if (currentPath === linkPath) return true;
+
+  // 1. Appointments workflow mapping:
+  // /clinic/queue directly highlights Appointments
+  if (linkPath === '/clinic/appointments') {
+    if (currentPath === '/clinic/queue' || currentPath.startsWith('/clinic/queue')) {
+      return true;
+    }
+  }
+
+  // 2. Clinical Visits mapping:
+  // /clinic/diagnosis-treatment is labeled "Clinical Visits" in the UI
+  if (linkPath === '/clinic/diagnosis-treatment') {
+    if (
+      currentPath === '/clinic/clinical-visits' || 
+      currentPath.startsWith('/clinic/clinical-visits') || 
+      currentPath.startsWith('/clinic/diagnosis-treatment')
+    ) {
+      return true;
+    }
+  }
+
+  // 3. Add Products mapping for Inventory
+  if (linkPath === '/inventory/add-products') {
+    if (currentPath === '/inventory/items' || currentPath.startsWith('/inventory/items')) {
+      return true;
+    }
+  }
+
+  // 4. Nested route matching (e.g., /clinic/patient-records/123 -> /clinic/patient-records)
+  if (currentPath.startsWith(`${linkPath}/`)) {
+    return true;
+  }
+
+  return false;
+};
+
 const Sidebar = ({ role, closeSidebar }) => {
+  const location = useLocation();
+
   const clinicLinks = [
     { name: 'Dashboard', path: '/clinic/dashboard', icon: LayoutDashboard },
     { name: 'Patient Records', path: '/clinic/patient-records', icon: Users },
-    { name: 'Chief Complaint', path: '/clinic/chief-complaint', icon: FileText },
+    { name: 'Appointments', path: '/clinic/appointments', icon: Calendar },
     { name: 'Clinical Visits', path: '/clinic/diagnosis-treatment', icon: Stethoscope },
     { name: 'Treatment Records', path: '/clinic/treatment-records', icon: ClipboardList },
-    { name: 'Appointments', path: '/clinic/appointments', icon: Calendar },
     { name: 'Document Upload', path: '/clinic/documents', icon: UploadCloud },
     { name: 'Profile', path: '/clinic/profile', icon: User },
   ];
 
-  const inventoryGroups = [
-    {
-      title: 'Core & System',
-      links: [
-        { name: 'Dashboard', path: '/inventory/dashboard', icon: Home },
-        { name: 'Summary Dashboard', path: '/inventory/summary', icon: BarChart2 },
-      ]
-    },
-    {
-      title: 'Inventory Control',
-      links: [
-        { name: 'Item Management', path: '/inventory/items', icon: Package },
-        { name: 'Stock Management', path: '/inventory/stock', icon: ClipboardList },
-        { name: 'Stock in Hand', path: '/inventory/stock-in-hand', icon: Archive },
-        { name: 'Material & Inventory', path: '/inventory/material-inventory', icon: Layers },
-      ]
-    },
-    {
-      title: 'Supply Chain',
-      links: [
-        { name: 'Suppliers', path: '/inventory/suppliers', icon: Users },
-        { name: 'Purchase Orders', path: '/inventory/purchase-orders', icon: ShoppingBag },
-        { name: 'Goods Received', path: '/inventory/goods-received', icon: FileCheck },
-        { name: 'Material Supply', path: '/inventory/material-supply', icon: Truck },
-      ]
-    },
-    {
-      title: 'Finance & Labs',
-      links: [
-        { name: 'Lab Management', path: '/inventory/labs', icon: Beaker },
-        { name: 'Supplier Payments', path: '/inventory/payments', icon: DollarSign },
-        { name: 'Due Payments', path: '/inventory/due-payments', icon: CreditCard },
-        { name: 'Material Requirements', path: '/inventory/requirements', icon: HelpCircle },
-        { name: 'Reports', path: '/inventory/reports', icon: FileText },
-      ]
-    }
+  const inventoryLinks = [
+    { name: 'Dashboard', path: '/inventory/dashboard', icon: LayoutDashboard },
+    { name: 'Add Products', path: '/inventory/add-products', icon: Package },
   ];
 
+  const userRole = (role || '').toLowerCase();
+
   const getLinks = () => {
-    switch (role) {
+    switch (userRole) {
       case 'admin':
         return [
           { name: 'Dashboard', path: '/admin/dashboard', icon: Home },
@@ -76,6 +94,32 @@ const Sidebar = ({ role, closeSidebar }) => {
 
   const links = getLinks();
 
+  const renderNavItem = (link) => {
+    const isActive = isRouteActive(link.path, location.pathname);
+
+    return (
+      <NavLink
+        key={link.name}
+        to={link.path}
+        onClick={closeSidebar}
+        className={cn(
+          'group flex items-center px-3.5 py-2.5 text-sm rounded-xl transition-all duration-150 select-none',
+          isActive
+            ? 'bg-blue-50 text-blue-600 font-semibold shadow-2xs'
+            : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 font-medium'
+        )}
+      >
+        <link.icon
+          className={cn(
+            "w-5 h-5 mr-3 shrink-0 transition-colors",
+            isActive ? "text-blue-600" : "text-slate-400 group-hover:text-slate-600"
+          )}
+        />
+        <span className="truncate">{link.name}</span>
+      </NavLink>
+    );
+  };
+
   return (
     <div className="flex flex-col w-64 bg-surface border-r border-border h-full shrink-0">
       <div className="h-16 flex items-center px-6 border-b border-border shrink-0">
@@ -84,61 +128,23 @@ const Sidebar = ({ role, closeSidebar }) => {
       </div>
       <nav className="flex-1 px-4 py-6 overflow-y-auto space-y-4">
         
-        {role === 'inventory' ? (
-          <div className="space-y-5">
-            {inventoryGroups.map((group) => (
-              <div key={group.title} className="space-y-1.5">
-                <span className="px-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-                  {group.title}
-                </span>
-                <div className="space-y-0.5">
-                  {group.links.map((link) => (
-                    <NavLink
-                      key={link.name}
-                      to={link.path}
-                      onClick={closeSidebar}
-                      className={({ isActive }) =>
-                        cn(
-                          'flex items-center px-3 py-2 text-xs font-semibold rounded-md transition-colors',
-                          isActive
-                            ? 'bg-primary/10 text-primary'
-                            : 'text-textSecondary hover:bg-muted hover:text-textPrimary'
-                        )
-                      }
-                    >
-                      <link.icon className="w-4 h-4 mr-2.5 shrink-0" />
-                      <span className="truncate">{link.name}</span>
-                    </NavLink>
-                  ))}
-                </div>
-              </div>
-            ))}
+        {userRole === 'inventory' ? (
+          <div className="space-y-4">
+            <span className="px-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+              INVENTORY
+            </span>
+            <div className="space-y-1">
+              {inventoryLinks.map(renderNavItem)}
+            </div>
           </div>
         ) : (
           <>
             <div className="space-y-1">
-              {links.map((link) => (
-                <NavLink
-                  key={link.name}
-                  to={link.path}
-                  onClick={closeSidebar}
-                  className={({ isActive }) =>
-                    cn(
-                      'flex items-center px-3 py-2.5 text-sm font-medium rounded-md transition-colors',
-                      isActive
-                        ? 'bg-primary/10 text-primary'
-                        : 'text-textSecondary hover:bg-muted hover:text-textPrimary'
-                    )
-                  }
-                >
-                  <link.icon className="w-5 h-5 mr-3 shrink-0" />
-                  <span className="truncate">{link.name}</span>
-                </NavLink>
-              ))}
+              {links.map(renderNavItem)}
             </div>
 
             {/* Clinic Section (For Admins) */}
-            {role === 'admin' && (
+            {userRole === 'admin' && (
               <>
                 <div className="pt-4 border-t border-slate-100">
                   <div className="px-3 py-2 text-sm font-bold text-slate-700 uppercase tracking-wider">
@@ -146,24 +152,7 @@ const Sidebar = ({ role, closeSidebar }) => {
                   </div>
                   
                   <div className="mt-2 space-y-1">
-                    {clinicLinks.map((link) => (
-                      <NavLink
-                        key={link.name}
-                        to={link.path}
-                        onClick={closeSidebar}
-                        className={({ isActive }) =>
-                          cn(
-                            'flex items-center px-3 py-2.5 text-sm font-medium rounded-md transition-colors',
-                            isActive
-                              ? 'bg-primary/10 text-primary'
-                              : 'text-textSecondary hover:bg-muted hover:text-textPrimary'
-                          )
-                        }
-                      >
-                        <link.icon className="w-5 h-5 mr-3 shrink-0" />
-                        <span className="truncate">{link.name}</span>
-                      </NavLink>
-                    ))}
+                    {clinicLinks.map(renderNavItem)}
                   </div>
                 </div>
 
@@ -173,24 +162,7 @@ const Sidebar = ({ role, closeSidebar }) => {
                   </div>
                   
                   <div className="mt-2 space-y-1">
-                    {inventoryGroups.flatMap(g => g.links).map((link) => (
-                      <NavLink
-                        key={link.name}
-                        to={link.path}
-                        onClick={closeSidebar}
-                        className={({ isActive }) =>
-                          cn(
-                            'flex items-center px-3 py-2.5 text-sm font-medium rounded-md transition-colors',
-                            isActive
-                              ? 'bg-primary/10 text-primary'
-                              : 'text-textSecondary hover:bg-muted hover:text-textPrimary'
-                          )
-                        }
-                      >
-                        <link.icon className="w-5 h-5 mr-3 shrink-0" />
-                        <span className="truncate">{link.name}</span>
-                      </NavLink>
-                    ))}
+                    {inventoryLinks.map(renderNavItem)}
                   </div>
                 </div>
               </>
@@ -204,3 +176,4 @@ const Sidebar = ({ role, closeSidebar }) => {
 };
 
 export { Sidebar };
+export default Sidebar;

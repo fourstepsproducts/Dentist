@@ -213,30 +213,55 @@ export const InventoryProvider = ({ children }) => {
   // 1. Items
   const addItem = (item) => {
     const newId = items.length > 0 ? Math.max(...items.map(i => i.id)) + 1 : 1;
-    const code = `INV-${String(newId).padStart(3, '0')}`;
+    const productId = item.productId || item.code || `PRD-${String(Math.floor(1000 + Math.random() * 9000))}`;
+    const initialQty = Number(item.initialQuantity ?? item.quantity) || 0;
+    const itemsPerUnit = Number(item.itemsPerUnit) || 1;
+    const baseQuantity = initialQty * itemsPerUnit;
+
     const newItem = {
       ...item,
       id: newId,
-      code,
-      quantity: Number(item.quantity) || 0,
-      reservedQuantity: Number(item.reservedQuantity) || 0,
-      minStock: Number(item.minStock) || 0,
-      maxStock: Number(item.maxStock) || 100,
-      costPrice: Number(item.costPrice) || 0,
+      code: productId,
+      productId: productId,
+      name: item.name,
+      category: item.category || 'General',
+      brand: item.brand || '',
+      description: item.description || '',
+      initialQuantity: initialQty,
+      unit: item.unit || 'Piece',
+      itemsPerUnit: itemsPerUnit,
+      quantity: baseQuantity, // Consistent base quantity stored internally for accurate stock calculation
+      baseQuantity: baseQuantity,
+      purchasePrice: Number(item.purchasePrice) || 0,
+      costPrice: Number(item.purchasePrice) || 0,
+      purchasePriceType: item.purchasePriceType || 'per_unit',
       sellingPrice: Number(item.sellingPrice) || 0,
-      status: item.status || 'Active',
-      expiryDate: item.expiryDate || 'N/A'
+      sellingPriceType: item.sellingPriceType || 'per_unit',
+      purchaseDate: item.purchaseDate || new Date().toISOString().split('T')[0],
+      supplier: item.supplier || '',
+      supplierId: item.supplierId || null,
+      invoiceNumber: item.invoiceNumber || '',
+      batchNumber: item.batchNumber || '',
+      expiryDate: item.expiryDate || 'N/A',
+      usageType: item.usageType || 'Clinic Use',
+      reservedQuantity: Number(item.reservedQuantity) || 0,
+      minStock: Number(item.minStock) || 5,
+      maxStock: Number(item.maxStock) || 100,
+      status: item.status || 'Active'
     };
+    
     setItems(prev => [...prev, newItem]);
     
     // Log transaction
     addStockTransaction({
       itemId: newId,
       type: 'Stock In',
-      quantity: newItem.quantity,
+      quantity: newItem.baseQuantity,
       reference: 'Initial Stock',
-      remarks: 'Item added to inventory'
+      remarks: `Product added: ${newItem.initialQuantity} ${newItem.unit}(s) (${newItem.baseQuantity} total items)`
     });
+
+    return newItem;
   };
 
   const updateItem = (id, updatedFields) => {

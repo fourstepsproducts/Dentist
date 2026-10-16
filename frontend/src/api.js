@@ -4,6 +4,18 @@ const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || `${import.meta.env.VITE_BACKEND_URL}/api`,
 });
 
+// Automatic Bearer Token Authorization Interceptor
+api.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+
 // Global interceptor for handling 401 Unauthorized errors
 api.interceptors.response.use(
   (response) => response,

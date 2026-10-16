@@ -108,10 +108,29 @@ const generateVisitNumber = async (patientId) => {
   return await getNextSequence(`visit_${patientId}`);
 };
 
+/**
+ * generateQueueToken — Daily atomic sequential token number
+ * ----------------------------------------------------------
+ * Generates an incremented sequence number for today's queue session.
+ * Guaranteed atomic, unique per queue session date, safe under concurrency.
+ *
+ * @param {string} dateStr - Date string YYYY-MM-DD
+ * @returns {Promise<{ tokenNumber: number, tokenDisplay: string }>}
+ */
+const generateQueueToken = async (dateStr) => {
+  const counterKey = `queue_token_${dateStr}`;
+  const seq = await getNextSequence(counterKey);
+  return {
+    tokenNumber: seq,
+    tokenDisplay: `T-${String(seq).padStart(3, '0')}`,
+  };
+};
+
 module.exports = {
   getNextSequence,
   generatePatientId,
   generateEmployeeId,
   generateVisitNumber,
+  generateQueueToken,
   getRoleCode,
 };

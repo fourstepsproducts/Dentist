@@ -16,10 +16,10 @@ import FinancialReports from './pages/admin/FinancialReports';
 // Clinic Portal Pages
 import DynamicDashboard from './pages/clinic/pages/DynamicDashboard';
 import PatientRecords from './pages/clinic/pages/PatientRecords';
-import ChiefComplaint from './pages/clinic/pages/ChiefComplaint';
 import DiagnosisTreatment from './pages/clinic/pages/DiagnosisTreatment';
 import TreatmentRecords from './pages/clinic/pages/TreatmentRecords';
 import Appointments from './pages/clinic/pages/Appointments';
+import PatientQueue from './pages/clinic/pages/PatientQueue';
 import Documents from './pages/clinic/pages/Documents';
 import Profile from './pages/clinic/pages/Profile';
 import Settings from './pages/clinic/pages/Settings';
@@ -27,6 +27,7 @@ import Settings from './pages/clinic/pages/Settings';
 // Inventory Panel Pages & Context
 import { InventoryProvider } from './context/InventoryContext';
 import InventoryDashboard from './pages/inventory/pages/Dashboard';
+import AddProduct from './pages/inventory/pages/AddProduct';
 import ItemManagement from './pages/inventory/pages/ItemManagement';
 import MaterialSupply from './pages/inventory/pages/MaterialSupply';
 import StockManagement from './pages/inventory/pages/StockManagement';
@@ -74,10 +75,11 @@ function App() {
           <Route element={<ProtectedRoute allowedRoles={['clinic_all']} />}>
             <Route path="/clinic/dashboard" element={<DynamicDashboard />} />
             <Route path="/clinic/patient-records" element={<PatientRecords />} />
-            <Route path="/clinic/chief-complaint" element={<ChiefComplaint />} />
+            <Route path="/clinic/chief-complaint" element={<Navigate to="/clinic/appointments" replace />} />
             <Route path="/clinic/diagnosis-treatment" element={<DiagnosisTreatment />} />
             <Route path="/clinic/treatment-records" element={<TreatmentRecords />} />
             <Route path="/clinic/appointments" element={<Appointments />} />
+            <Route path="/clinic/queue" element={<PatientQueue />} />
             <Route path="/clinic/documents" element={<Documents />} />
             <Route path="/clinic/profile" element={<Profile />} />
             <Route path="/clinic/settings" element={<Settings />} />
@@ -90,8 +92,10 @@ function App() {
                 <Outlet />
               </InventoryProvider>
             }>
+              <Route path="/inventory" element={<Navigate to="/inventory/dashboard" replace />} />
               <Route path="/inventory/dashboard" element={<InventoryDashboard />} />
-              <Route path="/inventory/items" element={<ItemManagement />} />
+              <Route path="/inventory/add-products" element={<AddProduct />} />
+              <Route path="/inventory/items" element={<Navigate to="/inventory/add-products" replace />} />
               <Route path="/inventory/material-supply" element={<MaterialSupply />} />
               <Route path="/inventory/stock" element={<StockManagement />} />
               <Route path="/inventory/stock-in-hand" element={<StockInHand />} />

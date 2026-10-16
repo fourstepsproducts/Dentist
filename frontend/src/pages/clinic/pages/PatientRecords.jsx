@@ -1,14 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../../../api';
-import { Plus, Search, Eye, Edit2, Trash2, Calendar, Phone, Mail, MapPin, User, Activity, ShieldAlert, Stethoscope } from 'lucide-react';
+import { Plus, Search, Eye, Edit2, Trash2, Calendar, Phone, Mail, MapPin, User, Activity, ShieldAlert } from 'lucide-react';
 import { Button } from '../../../components/ui/Button';
 import { Input } from '../../../components/ui/Input';
+import { Select } from '../../../components/ui/Select';
 import { Card } from '../../../components/ui/Card';
 import { Modal } from '../../../components/ui/Modal';
 import { ConfirmModal } from '../../../components/ui/ConfirmModal';
 import { Badge } from '../../../components/ui/Badge';
 import { showToast } from '../../../utils/toast';
+import { cn } from '../../../lib/utils';
 
 const PatientRecords = () => {
   const navigate = useNavigate();
@@ -158,6 +160,12 @@ const PatientRecords = () => {
     }
   };
 
+  const handleBookAppointment = (patient) => {
+    navigate(`/clinic/appointments?patientId=${patient._id}`, {
+      state: { patient },
+    });
+  };
+
   const handleOpenDetails = async (patient) => {
     try {
       const token = localStorage.getItem('token');
@@ -272,35 +280,36 @@ const PatientRecords = () => {
                     </td>
                     <td className="px-6 py-4 text-slate-600 font-medium">{p.phone}</td>
                     <td className="px-6 py-4 text-slate-500">{formatDate(p.createdAt)}</td>
-                    <td className="px-6 py-4 text-right">
-                      <div className="flex items-center justify-end gap-1">
+                    <td className="px-6 py-4 text-right whitespace-nowrap">
+                      <div className="flex items-center justify-end gap-1.5">
                         <button
                           onClick={() => handleOpenDetails(p)}
-                          className="text-slate-400 hover:text-blue-600 hover:bg-blue-50 p-1.5 rounded-lg transition-colors"
+                          className="text-slate-400 hover:text-blue-600 hover:bg-blue-50 p-1.5 rounded-lg transition-colors cursor-pointer"
                           title="View Clinical History"
                         >
                           <Eye size={15} />
                         </button>
                         <button
-                          onClick={() => navigate(`/clinic/diagnosis-treatment?patientId=${p._id}`)}
-                          className="text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 p-1.5 rounded-lg transition-colors"
-                          title="View All Diagnoses"
-                        >
-                          <Stethoscope size={15} />
-                        </button>
-                        <button
                           onClick={() => handleOpenEdit(p)}
-                          className="text-slate-400 hover:text-amber-600 hover:bg-amber-50 p-1.5 rounded-lg transition-colors"
+                          className="text-slate-400 hover:text-amber-600 hover:bg-amber-50 p-1.5 rounded-lg transition-colors cursor-pointer"
                           title="Edit Details"
                         >
                           <Edit2 size={15} />
                         </button>
                         <button
                           onClick={() => handleDelete(p)}
-                          className="text-slate-400 hover:text-red-600 hover:bg-red-50 p-1.5 rounded-lg transition-colors"
+                          className="text-slate-400 hover:text-red-600 hover:bg-red-50 p-1.5 rounded-lg transition-colors cursor-pointer"
                           title="Delete Patient"
                         >
                           <Trash2 size={15} />
+                        </button>
+                        <button
+                          onClick={() => handleBookAppointment(p)}
+                          className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold text-blue-700 bg-blue-50 hover:bg-blue-600 hover:text-white border border-blue-200 hover:border-blue-600 rounded-lg transition-all ml-1 shadow-2xs group cursor-pointer"
+                          title={`Book Appointment for ${p.name}`}
+                        >
+                          <Calendar size={13} className="text-blue-600 group-hover:text-white transition-colors" />
+                          <span>Book Appointment</span>
                         </button>
                       </div>
                     </td>
@@ -367,17 +376,17 @@ const PatientRecords = () => {
             </div>
             <div className="space-y-1.5">
               <label className="text-xs font-semibold text-slate-600">Gender *</label>
-              <select
+              <Select
                 name="gender"
                 value={formData.gender}
                 onChange={handleFormChange}
-                className="w-full h-10 px-3 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-600 shadow-sm text-sm bg-white"
+                options={[
+                  { value: 'Male', label: 'Male' },
+                  { value: 'Female', label: 'Female' },
+                  { value: 'Other', label: 'Other' },
+                ]}
                 required
-              >
-                <option value="Male">Male</option>
-                <option value="Female">Female</option>
-                <option value="Other">Other</option>
-              </select>
+              />
             </div>
           </div>
 
@@ -461,7 +470,7 @@ const PatientRecords = () => {
           title={`Clinical Record File: ${selectedPatient.name}`}
           maxWidth="max-w-2xl"
         >
-          <div className="space-y-6 max-h-[80vh] overflow-y-auto pr-1">
+          <div className="space-y-6">
             {/* Demographics Card */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-100">
               <div className="space-y-2">

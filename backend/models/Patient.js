@@ -44,6 +44,10 @@ const patientSchema = new mongoose.Schema(
     chiefComplaints: [
       {
         text: { type: String, required: true },
+        visitId: { type: mongoose.Schema.Types.ObjectId, ref: 'Diagnosis', default: null },
+        appointmentId: { type: mongoose.Schema.Types.ObjectId, ref: 'Appointment', default: null },
+        hasAppointment: { type: Boolean, default: false },
+        recordedBy: { type: String, default: '' },
         date: { type: Date, default: Date.now },
       },
     ],
@@ -51,6 +55,7 @@ const patientSchema = new mongoose.Schema(
       {
         diagnosis: { type: String, required: true },
         treatmentPlan: { type: String, required: true },
+        visitId: { type: mongoose.Schema.Types.ObjectId, ref: 'Diagnosis', default: null },
         date: { type: Date, default: Date.now },
       },
     ],
@@ -59,6 +64,7 @@ const patientSchema = new mongoose.Schema(
         name: { type: String, required: true },
         cost: { type: Number, required: true },
         status: { type: String, enum: ['Pending', 'Completed'], default: 'Pending' },
+        visitId: { type: mongoose.Schema.Types.ObjectId, ref: 'Diagnosis', default: null },
         date: { type: Date, default: Date.now },
       },
     ],

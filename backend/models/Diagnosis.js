@@ -21,6 +21,12 @@ const diagnosisSchema = new mongoose.Schema(
       index: true,
     },
 
+    appointment: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Appointment',
+      default: null,
+    },
+
     // Per-patient sequential number — never reused, never reset
     visitNumber: {
       type: Number,
@@ -45,19 +51,38 @@ const diagnosisSchema = new mongoose.Schema(
 
     // ── Doctors ───────────────────────────────────────────────────────────
     // Only populated for 'specialist' visits
-    consultingDoctor: { type: String, trim: true, default: '' },
+    consultingDoctor:   { type: String, trim: true, default: '' },
+    consultingDoctorId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
 
     // Always populated — the doctor who treated the patient
-    attendingDoctor:  { type: String, trim: true, default: '' },
+    attendingDoctor:   { type: String, trim: true, default: '' },
+    attendingDoctorId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
 
-    // ── Core Clinical Fields (both types) ─────────────────────────────────
-    chiefComplaint:     { type: String, required: true, trim: true },
-    diagnosis:          { type: String, required: true, trim: true },
-    treatmentPerformed: { type: String, required: true, trim: true },
+    // ── Core Clinical Fields & Outcome ─────────────────────────────────
+    chiefComplaint:     { type: String, trim: true, default: '' },
+    diagnosis:          { type: String, trim: true, default: '' },
+    treatmentPerformed: { type: String, trim: true, default: '' },
+    cost:               { type: Number, default: 0 },
+    treatmentStatus:    { 
+      type: String, 
+      enum: ['Not Started', 'In Progress', 'Partially Completed', 'Completed', 'Referred', 'Pending'], 
+      default: 'Not Started' 
+    },
+    visitOutcome:       {
+      type: String,
+      default: 'Awaiting treatment record'
+    },
+    followUpRequired:   { type: String, enum: ['Yes', 'No'], default: 'No' },
+    followUpType:       { type: String, trim: true, default: '' },
+    referralNotes:      { type: String, trim: true, default: '' },
+    isClosed:           { type: Boolean, default: false },
+    status:             { type: String, default: 'Open' },
 
-    // ── Optional Fields (both types) ─────────────────────────────────────
+    // ── Optional Fields ──────────────────────────────────────────────────
     notes:      { type: String, trim: true, default: '' },
-    incentives: { type: String, trim: true, default: '' },
+    incentives: { type: String, trim: true, default: '' }, // For backward compatibility / general incentive note
+    consultingDoctorIncentive: { type: Number, default: 0 },
+    attendingDoctorIncentive:  { type: Number, default: 0 },
 
     // Who logged this visit
     createdBy: {

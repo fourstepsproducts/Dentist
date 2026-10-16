@@ -4,9 +4,13 @@ const cors = require('cors');
 const connectDB = require('./config/db');
 
 
+const { startOverdueAppointmentJob } = require('./services/appointmentStatusService');
+
 dotenv.config();
 
-connectDB();
+connectDB().then(() => {
+  startOverdueAppointmentJob(60000);
+});
 
 const app = express();
 
@@ -25,6 +29,8 @@ app.use('/api/clinic-dashboard', require('./routes/clinicDashboardRoutes'));
 app.use('/api/patients', require('./routes/patientRoutes'));
 app.use('/api/appointments', require('./routes/appointmentRoutes'));
 app.use('/api/diagnoses', require('./routes/diagnosisRoutes'));
+app.use('/api/doctors', require('./routes/doctorRoutes'));
+app.use('/api/queue', require('./routes/queueRoutes'));
 
 // Basic health check route
 app.get('/', (req, res) => {

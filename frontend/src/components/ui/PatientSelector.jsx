@@ -7,7 +7,8 @@ import { cn } from '../../lib/utils';
 const PatientSelector = ({
   value = '',
   onChange,
-  className
+  className,
+  selectedPatient: propSelectedPatient
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -93,7 +94,7 @@ const PatientSelector = ({
     if (!isOpen) setSearchQuery('');
   }, [isOpen]);
 
-  const selectedPatient = patients.find((p) => p._id === value);
+  const selectedPatient = (propSelectedPatient && propSelectedPatient._id === value ? propSelectedPatient : null) || patients.find((p) => p._id === value);
 
   const filteredPatients = patients.filter((p) =>
     p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||

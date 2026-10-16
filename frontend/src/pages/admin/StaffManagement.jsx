@@ -254,10 +254,8 @@ const StaffManagement = () => {
                         </div>
                       )}
                       <div className="flex justify-between items-center gap-2 text-sm">
-                        <span className="text-slate-500 shrink-0">Status</span>
-                        <Badge variant={(staff.status || (staff.isActive ? 'Active' : 'Inactive')) === 'Active' ? 'success' : 'warning'} className="shrink-0">
-                          {staff.status || (staff.isActive ? 'Active' : 'Inactive')}
-                        </Badge>
+                        <span className="text-slate-500 shrink-0">Role</span>
+                        <span className="font-semibold text-slate-900 truncate" title={staff.role}>{staff.role || '-'}</span>
                       </div>
                     </div>
                   </div>
